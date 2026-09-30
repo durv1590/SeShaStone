@@ -1,0 +1,23 @@
+{
+  "name": "seshastone",
+  "private": true,
+  "description": "Se Sha Stone — jewellery e-commerce platform (customer web, admin panel, API)",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:api": "npm run start:dev -w @seshastone/api",
+    "dev:web": "npm run dev -w @seshastone/web",
+    "dev:admin": "npm run dev -w @seshastone/admin",
+    "build": "npm run build --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "db:migrate": "npm run prisma:migrate -w @seshastone/api",
+    "db:seed": "npm run prisma:seed -w @seshastone/api"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
