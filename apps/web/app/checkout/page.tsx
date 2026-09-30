@@ -17,7 +17,11 @@ interface Quote {
   couponCode: string | null;
 }
 
+const MANUAL_PROVIDERS = ['UPI_DIRECT', 'BANK_TRANSFER'];
+
 const PROVIDER_LABELS: Record<string, string> = {
+  UPI_DIRECT: 'UPI — scan QR or pay from any UPI app',
+  BANK_TRANSFER: 'Bank transfer (NEFT / IMPS)',
   UPI: 'UPI (GPay, PhonePe, Paytm)',
   RAZORPAY: 'Cards, Netbanking & Wallets',
   CASHFREE: 'Cashfree',
@@ -106,7 +110,13 @@ export default function CheckoutPage() {
         token,
         body: JSON.stringify({ items, addressId, paymentProvider: provider, couponCode: appliedCoupon }),
       });
-      if (provider !== 'COD') await payForOrder(order.id, token, provider);
+      if (provider === 'COD' || MANUAL_PROVIDERS.includes(provider)) {
+        // Manual methods show UPI / bank details on the order page.
+        clearCart();
+        router.push(`/account/orders/${order.id}?placed=1`);
+        return;
+      }
+      await payForOrder(order.id, token, provider);
       clearCart();
       router.push(`/account/orders?placed=${order.orderNumber}`);
     } catch (err) {

@@ -8,6 +8,9 @@ import { formatPrice } from '@/lib/format';
 import { payForOrder } from '@/lib/payments';
 import { useStore } from '@/lib/store';
 
+const isManual = (o: Order) =>
+  !!o.payments?.some((p) => p.provider === 'UPI_DIRECT' || p.provider === 'BANK_TRANSFER');
+
 function Orders() {
   const { token } = useStore();
   const placed = useSearchParams().get('placed');
@@ -49,13 +52,16 @@ function Orders() {
           <tbody>
             {orders.map((o) => (
               <tr key={o.id}>
-                <td>{o.orderNumber}</td>
+                <td><Link href={`/account/orders/${o.id}`}>{o.orderNumber}</Link></td>
                 <td>{new Date(o.placedAt).toLocaleDateString('en-IN')}</td>
                 <td>{o.items.map((i) => `${i.productName} × ${i.quantity}`).join(', ')}</td>
                 <td>{formatPrice(o.total)}</td>
                 <td>{o.status.replace('_', ' ').toLowerCase()}</td>
                 <td>
-                  {o.status === 'PENDING_PAYMENT' && (
+                  {o.status === 'PENDING_PAYMENT' && isManual(o) && (
+                    <Link className="chip" href={`/account/orders/${o.id}`}>Pay now</Link>
+                  )}
+                  {o.status === 'PENDING_PAYMENT' && !isManual(o) && (
                     <button
                       className="chip"
                       onClick={() =>

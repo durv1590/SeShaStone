@@ -19,6 +19,25 @@ async function main() {
     },
   });
 
+  // Store details come from the (untracked) .env so bank/UPI data never lands in git.
+  // Existing values are left alone so edits made in the admin panel survive re-seeding.
+  const storeSettings: Record<string, string | undefined> = {
+    'store.legalName': process.env.SEED_STORE_LEGAL_NAME,
+    'store.website': process.env.SEED_STORE_WEBSITE,
+    'store.supportEmail': process.env.SEED_STORE_EMAIL,
+    'store.supportPhone': process.env.SEED_STORE_PHONE,
+    'payments.upiId': process.env.SEED_UPI_ID,
+    'payments.upiPayeeName': process.env.SEED_UPI_PAYEE_NAME,
+    'payments.bankName': process.env.SEED_BANK_NAME,
+    'payments.bankAccountName': process.env.SEED_BANK_ACCOUNT_NAME,
+    'payments.bankAccountNumber': process.env.SEED_BANK_ACCOUNT_NUMBER,
+    'payments.bankIfsc': process.env.SEED_BANK_IFSC,
+  };
+  for (const [key, value] of Object.entries(storeSettings)) {
+    if (!value) continue;
+    await prisma.setting.upsert({ where: { key }, update: {}, create: { key, value } });
+  }
+
   const rings = await prisma.category.upsert({
     where: { slug: 'rings' },
     update: {},
@@ -61,6 +80,28 @@ async function main() {
           inventory: { create: { quantity: 3 } },
         })),
       },
+    },
+  });
+
+  const contactLines = [
+    process.env.SEED_STORE_LEGAL_NAME,
+    process.env.SEED_STORE_EMAIL && `Email: ${process.env.SEED_STORE_EMAIL}`,
+    process.env.SEED_STORE_PHONE && `Phone / WhatsApp: ${process.env.SEED_STORE_PHONE}`,
+    process.env.SEED_STORE_WEBSITE && `Website: ${process.env.SEED_STORE_WEBSITE}`,
+  ].filter(Boolean);
+  await prisma.cmsPage.upsert({
+    where: { slug: 'contact' },
+    update: {},
+    create: {
+      slug: 'contact',
+      title: 'Contact us',
+      content: [
+        'We would love to help you choose, size or customise a piece.',
+        contactLines.join('\n'),
+      ]
+        .filter(Boolean)
+        .join('\n\n'),
+      isPublished: true,
     },
   });
 

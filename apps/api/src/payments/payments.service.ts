@@ -9,13 +9,18 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { OrderStatus, PaymentProvider, Prisma } from '@prisma/client';
 import { paginated } from '../common/dto/pagination.dto';
-import { OrdersService } from '../orders/orders.service';
+import { MANUAL_PROVIDERS, OrdersService } from '../orders/orders.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
 import { CashfreeGateway } from './gateways/cashfree.gateway';
 import { GatewayPaymentEvent, PaymentGateway } from './gateways/payment-gateway';
 import { RazorpayGateway } from './gateways/razorpay.gateway';
-import { InitiatePaymentDto, ListPaymentsDto, VerifyPaymentDto } from './payments.dto';
+import {
+  InitiatePaymentDto,
+  ListPaymentsDto,
+  SubmitPaymentReferenceDto,
+  VerifyPaymentDto,
+} from './payments.dto';
 
 @Injectable()
 export class PaymentsService {
@@ -114,6 +119,104 @@ export class PaymentsService {
     return { received: true };
   }
 
+  // ── Direct UPI / bank transfer ─────────────────────────────
+
+  /** What the customer needs to pay a manual-payment order: UPI ID + deep link, or bank details. */
+  async instructions(customerId: string, orderId: string) {
+    const payment = await this.manualPayment(customerId, orderId);
+    const order = payment.order;
+    const s = await this.settings.all();
+    const amount = (order.total / 100).toFixed(2);
+    const base = {
+      provider: payment.provider,
+      paymentId: payment.id,
+      orderNumber: order.orderNumber,
+      orderStatus: order.status,
+      paymentStatus: payment.status,
+      amount: order.total,
+      reference: order.orderNumber,
+      submittedReference: payment.providerPaymentId,
+    };
+
+    if (payment.provider === PaymentProvider.UPI_DIRECT) {
+      const payee = String(s['payments.upiPayeeName'] || s['store.legalName']);
+      // NPCI deep-link format; the VPA's '@' is left unescaped as some UPI apps don't decode it.
+      const upiId = String(s['payments.upiId']);
+      const uri =
+        `upi://pay?pa=${upiId}&pn=${encodeURIComponent(payee)}&am=${amount}&cu=INR` +
+        `&tn=${encodeURIComponent(`Order ${order.orderNumber}`)}`;
+      return { ...base, upi: { upiId, payeeName: payee, uri } };
+    }
+    return {
+      ...base,
+      bank: {
+        bankName: s['payments.bankName'],
+        accountName: s['payments.bankAccountName'] || s['store.legalName'],
+        accountNumber: s['payments.bankAccountNumber'],
+        ifsc: s['payments.bankIfsc'],
+      },
+    };
+  }
+
+  /** Customer reports the UTR of their transfer so an admin can match it. */
+  async submitReference(customerId: string, orderId: string, dto: SubmitPaymentReferenceDto) {
+    const payment = await this.manualPayment(customerId, orderId);
+    if (payment.order.status !== OrderStatus.PENDING_PAYMENT || payment.status !== 'PENDING') {
+      throw new BadRequestException('This order is not awaiting payment');
+    }
+    await this.prisma.payment.update({
+      where: { id: payment.id },
+      data: {
+        providerPaymentId: dto.reference.toUpperCase(),
+        raw: { submittedAt: new Date().toISOString() },
+      },
+    });
+    return this.instructions(customerId, orderId);
+  }
+
+  /** Admin has seen the money arrive: capture the payment and mark the order paid. */
+  async adminConfirm(paymentId: string) {
+    await this.prisma.$transaction(async (tx) => {
+      const payment = await tx.payment.findUnique({ where: { id: paymentId }, include: { order: true } });
+      if (!payment) throw new NotFoundException('Payment not found');
+      if (!MANUAL_PROVIDERS.includes(payment.provider) || payment.status !== 'PENDING') {
+        throw new BadRequestException('Only pending UPI / bank transfer payments can be confirmed');
+      }
+      if (payment.order.status !== OrderStatus.PENDING_PAYMENT) {
+        throw new BadRequestException(`Order is ${payment.order.status.toLowerCase()}, not awaiting payment`);
+      }
+      await tx.payment.update({ where: { id: payment.id }, data: { status: 'CAPTURED' } });
+      await this.orders.markPaid(tx, payment.orderId);
+    });
+    return { confirmed: true };
+  }
+
+  /** Admin could not find the transfer; the customer can submit a corrected UTR. */
+  async adminReject(paymentId: string, reason?: string) {
+    const payment = await this.prisma.payment.findUnique({ where: { id: paymentId } });
+    if (!payment || !MANUAL_PROVIDERS.includes(payment.provider) || payment.status !== 'PENDING') {
+      throw new BadRequestException('Only pending UPI / bank transfer payments can be rejected');
+    }
+    await this.prisma.payment.update({
+      where: { id: paymentId },
+      data: {
+        providerPaymentId: null,
+        raw: { rejectedAt: new Date().toISOString(), reason: reason ?? null },
+      },
+    });
+    return { rejected: true };
+  }
+
+  private async manualPayment(customerId: string, orderId: string) {
+    const payment = await this.prisma.payment.findFirst({
+      where: { orderId, order: { customerId }, provider: { in: MANUAL_PROVIDERS } },
+      include: { order: true },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (!payment) throw new NotFoundException('No UPI / bank transfer payment for this order');
+    return payment;
+  }
+
   async adminList(query: ListPaymentsDto) {
     const where: Prisma.PaymentWhereInput = {
       ...(query.status && { status: query.status }),
@@ -123,7 +226,7 @@ export class PaymentsService {
       this.prisma.payment.findMany({
         where,
         omit: { raw: true },
-        include: { order: { select: { orderNumber: true, customerId: true } } },
+        include: { order: { select: { id: true, orderNumber: true, customerId: true } } },
         orderBy: { createdAt: 'desc' },
         skip: query.skip,
         take: query.pageSize,
@@ -168,6 +271,9 @@ export class PaymentsService {
       provider === PaymentProvider.UPI
         ? (this.config.get<string>('payments.defaultProvider') as PaymentProvider)
         : provider;
+    if (MANUAL_PROVIDERS.includes(key)) {
+      throw new BadRequestException('Pay this order using the UPI / bank details on the order page');
+    }
     const gateway = this.gateways[key];
     if (!gateway) throw new BadRequestException(`Unsupported payment provider ${provider}`);
     if (!gateway.isConfigured()) {

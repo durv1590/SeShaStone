@@ -24,6 +24,12 @@ export default function DashboardPage() {
   const stats = useApi<Stats>('/admin/dashboard');
   const recent = useApi<Paginated<OrderRow>>('/admin/orders?pageSize=8');
   const lowStock = useApi<Paginated<unknown>>('/admin/inventory?lowStock=true&pageSize=1');
+  const toVerify = useApi<Paginated<{ provider: string; providerPaymentId: string | null }>>(
+    '/admin/payments?status=PENDING&pageSize=100',
+  );
+  const awaitingConfirmation = toVerify.data?.items.filter(
+    (p) => (p.provider === 'UPI_DIRECT' || p.provider === 'BANK_TRANSFER') && p.providerPaymentId,
+  ).length;
   const s = stats.data;
 
   return (
@@ -47,6 +53,10 @@ export default function DashboardPage() {
           <div className="label">To fulfil</div>
           <div className="value">{s ? (s.ordersByStatus.PAID ?? 0) + (s.ordersByStatus.PROCESSING ?? 0) : '—'}</div>
         </div>
+        <Link href="/payments?status=PENDING" className="stat">
+          <div className="label">UPI / bank payments to confirm</div>
+          <div className="value">{awaitingConfirmation ?? '—'}</div>
+        </Link>
         <Link href="/inventory?lowStock=true" className="stat">
           <div className="label">Low-stock variants</div>
           <div className="value">{lowStock.data?.total ?? '—'}</div>

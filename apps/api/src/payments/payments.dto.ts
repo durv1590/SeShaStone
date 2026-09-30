@@ -1,4 +1,4 @@
-import { IsEnum, IsObject, IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsObject, IsOptional, IsString, Matches } from 'class-validator';
 import { PaymentProvider, PaymentStatus } from '@prisma/client';
 import { PaginationDto } from '../common/dto/pagination.dto';
 
@@ -17,4 +17,14 @@ export class VerifyPaymentDto {
 export class ListPaymentsDto extends PaginationDto {
   @IsOptional() @IsEnum(PaymentStatus) status?: PaymentStatus;
   @IsOptional() @IsEnum(PaymentProvider) provider?: PaymentProvider;
+}
+
+export class SubmitPaymentReferenceDto {
+  /** UPI transaction ID / bank UTR (usually 12–22 letters and digits). */
+  @Matches(/^[A-Za-z0-9]{6,30}$/, { message: 'Enter the UTR / transaction reference shown in your app' })
+  reference: string;
+}
+
+export class RejectPaymentDto {
+  @IsOptional() @IsString() reason?: string;
 }

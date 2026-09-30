@@ -6,14 +6,25 @@ import { RedisService } from '../redis/redis.service';
 /** Defaults applied when a key has never been saved from the admin panel. */
 export const SETTING_DEFAULTS = {
   'store.name': 'Se Sha Stone',
-  'store.supportEmail': 'support@seshastone.com',
+  'store.legalName': 'SeSha Stone Pvt. Ltd.',
+  'store.website': 'www.seshastone.com',
+  'store.supportEmail': '',
   'store.supportPhone': '',
   'store.gstin': '',
   'shipping.flatRate': 0, // paise
   'shipping.freeAbove': 0, // paise; 0 = always free
   'checkout.codEnabled': false,
   'checkout.pendingOrderTtlMinutes': 30,
-  'payments.enabledProviders': ['RAZORPAY', 'UPI'], // RAZORPAY | CASHFREE | UPI
+  /** How long orders paid by direct UPI / bank transfer are held awaiting confirmation. */
+  'checkout.manualPaymentHoldHours': 48,
+  // RAZORPAY | CASHFREE | UPI (via gateway) | UPI_DIRECT | BANK_TRANSFER
+  'payments.enabledProviders': ['UPI_DIRECT', 'BANK_TRANSFER'],
+  'payments.upiId': '',
+  'payments.upiPayeeName': '',
+  'payments.bankName': '',
+  'payments.bankAccountName': '',
+  'payments.bankAccountNumber': '',
+  'payments.bankIfsc': '',
 } as const;
 
 export type SettingKey = keyof typeof SETTING_DEFAULTS;
@@ -21,6 +32,8 @@ export type SettingKey = keyof typeof SETTING_DEFAULTS;
 /** Keys the storefront may read without authentication. */
 export const PUBLIC_SETTING_KEYS: SettingKey[] = [
   'store.name',
+  'store.legalName',
+  'store.website',
   'store.supportEmail',
   'store.supportPhone',
   'shipping.flatRate',

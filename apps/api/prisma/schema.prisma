@@ -258,7 +258,9 @@ model OrderItem {
 enum PaymentProvider {
   RAZORPAY
   CASHFREE
-  UPI
+  UPI // UPI collected through the default gateway
+  UPI_DIRECT // customer pays the store's UPI ID; admin confirms the UTR
+  BANK_TRANSFER // NEFT/IMPS to the store's bank account; admin confirms the UTR
   COD
 }
 

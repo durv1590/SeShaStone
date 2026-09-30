@@ -105,10 +105,34 @@ export interface Order {
   id: string;
   orderNumber: string;
   status: string;
+  tax?: number;
+  payments?: { provider: string; status: string }[];
   subtotal: number;
   discount: number;
   shipping: number;
   total: number;
   placedAt: string;
   items: { id: string; productName: string; quantity: number; lineTotal: number }[];
+}
+
+export interface StoreSettings {
+  'store.name'?: string;
+  'store.legalName'?: string;
+  'store.website'?: string;
+  'store.supportEmail'?: string;
+  'store.supportPhone'?: string;
+  'checkout.codEnabled'?: boolean;
+  'payments.enabledProviders'?: string[];
+}
+
+export interface PaymentInstructions {
+  provider: 'UPI_DIRECT' | 'BANK_TRANSFER';
+  orderNumber: string;
+  orderStatus: string;
+  paymentStatus: string;
+  amount: number;
+  reference: string;
+  submittedReference: string | null;
+  upi?: { upiId: string; payeeName: string; uri: string };
+  bank?: { bankName: string; accountName: string; accountNumber: string; ifsc: string };
 }

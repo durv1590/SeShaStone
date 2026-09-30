@@ -4,6 +4,7 @@ import { use, useState } from 'react';
 import { api } from '@/lib/api';
 import { formatPrice } from '@/lib/format';
 import { useApi } from '@/lib/use-api';
+import { ManualPaymentActions } from '@/components/manual-payment-actions';
 import { formatDate, StatusBadge } from '@/components/ui';
 
 const NEXT_STATUSES: Record<string, string[]> = {
@@ -135,17 +136,18 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           <div className="table-wrap">
             <table className="table">
               <thead>
-                <tr><th>Provider</th><th>Method</th><th>Reference</th><th>Status</th><th>Date</th><th className="num">Amount</th></tr>
+                <tr><th>Provider</th><th>Method</th><th>Reference / UTR</th><th>Status</th><th>Date</th><th className="num">Amount</th><th /></tr>
               </thead>
               <tbody>
                 {order.payments.map((p) => (
                   <tr key={p.id}>
-                    <td>{p.provider}</td>
+                    <td>{p.provider.replace('_', ' ').toLowerCase()}</td>
                     <td>{p.method ?? '—'}</td>
                     <td>{p.providerPaymentId ?? '—'}</td>
                     <td><StatusBadge status={p.status} /></td>
                     <td>{formatDate(p.createdAt)}</td>
                     <td className="num">{formatPrice(p.amount)}</td>
+                    <td><ManualPaymentActions payment={p} onDone={reload} /></td>
                   </tr>
                 ))}
               </tbody>

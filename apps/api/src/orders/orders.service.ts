@@ -18,6 +18,12 @@ import { CheckoutDto, CheckoutItemDto, ListOrdersDto, UpdateOrderStatusDto } fro
 
 type Tx = Prisma.TransactionClient;
 
+/** Payment methods confirmed by an admin rather than a gateway callback. */
+export const MANUAL_PROVIDERS: PaymentProvider[] = [
+  PaymentProvider.UPI_DIRECT,
+  PaymentProvider.BANK_TRANSFER,
+];
+
 /** Allowed admin-driven status transitions. */
 const TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   PENDING_PAYMENT: ['CANCELLED'],
@@ -71,8 +77,12 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
     const enabled = await this.settings.get('payments.enabledProviders');
     const codEnabled = await this.settings.get('checkout.codEnabled');
     const isCod = dto.paymentProvider === PaymentProvider.COD;
+    const isManual = MANUAL_PROVIDERS.includes(dto.paymentProvider);
     if (isCod ? !codEnabled : !(enabled as readonly string[]).includes(dto.paymentProvider)) {
       throw new BadRequestException('Selected payment method is not available');
+    }
+    if (isManual && !(await this.manualProviderConfigured(dto.paymentProvider))) {
+      throw new BadRequestException('Selected payment method is not set up yet');
     }
 
     return this.prisma.$transaction(async (tx) => {
@@ -115,6 +125,17 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
         await tx.payment.create({
           data: { orderId: order.id, provider: 'COD', status: 'PENDING', amount: order.total },
         });
+      } else if (isManual) {
+        // Awaiting the customer's transfer; an admin confirms it against the UTR.
+        await tx.payment.create({
+          data: {
+            orderId: order.id,
+            provider: dto.paymentProvider,
+            status: 'PENDING',
+            amount: order.total,
+            method: dto.paymentProvider === PaymentProvider.UPI_DIRECT ? 'upi' : 'bank_transfer',
+          },
+        });
       }
 
       return tx.order.findUniqueOrThrow({ where: { id: order.id }, include: orderInclude });
@@ -126,7 +147,7 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
     const [items, total] = await this.prisma.$transaction([
       this.prisma.order.findMany({
         where,
-        include: { items: true },
+        include: { items: true, payments: { select: { provider: true, status: true } } },
         orderBy: { placedAt: 'desc' },
         skip: query.skip,
         take: query.pageSize,
@@ -251,6 +272,10 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
         } else {
           await this.restock(tx, stock, order.id);
         }
+        await tx.payment.updateMany({
+          where: { orderId: order.id, status: { in: ['CREATED', 'PENDING'] } },
+          data: { status: 'FAILED' },
+        });
         const usage = await tx.couponUsage.findUnique({ where: { orderId: order.id } });
         if (usage) {
           await tx.couponUsage.delete({ where: { id: usage.id } });
@@ -275,6 +300,12 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
     });
   }
 
+  private async manualProviderConfigured(provider: PaymentProvider) {
+    const all = await this.settings.all();
+    if (provider === PaymentProvider.UPI_DIRECT) return Boolean(all['payments.upiId']);
+    return Boolean(all['payments.bankAccountNumber'] && all['payments.bankIfsc']);
+  }
+
   private async restock(tx: Tx, lines: StockLine[], orderId: string) {
     for (const line of lines) {
       const item = await tx.inventoryItem.update({
@@ -294,11 +325,21 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
   }
 
   private async expireStalePendingOrders() {
-    const ttl = await this.settings.get('checkout.pendingOrderTtlMinutes');
+    const ttlMinutes = Number(await this.settings.get('checkout.pendingOrderTtlMinutes'));
+    const manualHours = Number(await this.settings.get('checkout.manualPaymentHoldHours'));
+    const manual = { payments: { some: { provider: { in: MANUAL_PROVIDERS } } } };
     const stale = await this.prisma.order.findMany({
       where: {
         status: OrderStatus.PENDING_PAYMENT,
-        placedAt: { lt: new Date(Date.now() - Number(ttl) * 60_000) },
+        OR: [
+          // Gateway checkouts: short hold.
+          { NOT: manual, placedAt: { lt: new Date(Date.now() - ttlMinutes * 60_000) } },
+          // Direct UPI / bank transfer: longer hold unless the customer already sent a UTR.
+          {
+            payments: { some: { provider: { in: MANUAL_PROVIDERS }, providerPaymentId: null } },
+            placedAt: { lt: new Date(Date.now() - manualHours * 3600_000) },
+          },
+        ],
       },
       select: { id: true },
       take: 100,

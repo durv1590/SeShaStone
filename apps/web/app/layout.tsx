@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { HeaderActions } from '@/components/header-actions';
-import { api, Category } from '@/lib/api';
+import { api, Category, StoreSettings } from '@/lib/api';
 import { StoreProvider } from '@/lib/store';
 import './globals.css';
 
@@ -13,7 +13,13 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const categories = await api<Category[]>('/categories').catch(() => []);
+  const [categories, settings] = await Promise.all([
+    api<Category[]>('/categories').catch(() => []),
+    api<StoreSettings>('/settings').catch(() => ({}) as StoreSettings),
+  ]);
+  const phone = settings['store.supportPhone'];
+  const email = settings['store.supportEmail'];
+  const website = settings['store.website'];
 
   return (
     <html lang="en-IN">
@@ -40,7 +46,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <Link href="/pages/returns">Returns</Link>
                 <Link href="/pages/contact">Contact</Link>
               </div>
-              <p>© {new Date().getFullYear()} Se Sha Stone. BIS hallmarked · Certified gemstones.</p>
+              {(email || phone) && (
+                <p className="footer-contact">
+                  {email && <a href={`mailto:${email}`}>{email}</a>}
+                  {phone && <a href={`tel:${phone.replace(/\s/g, '')}`}>{phone}</a>}
+                  {website && <a href={`https://${website.replace(/^https?:\/\//, '')}`}>{website}</a>}
+                </p>
+              )}
+              <p>
+                © {new Date().getFullYear()} {settings['store.legalName'] ?? 'Se Sha Stone'} · BIS hallmarked · Certified gemstones
+              </p>
             </div>
           </footer>
         </StoreProvider>

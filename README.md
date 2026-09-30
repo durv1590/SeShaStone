@@ -51,9 +51,24 @@ npm run dev:admin   # http://localhost:3001  (admin@seshastone.com / ChangeMe123
 
 Create a bucket named `seshastone-media` in the MinIO console (http://localhost:9001) with public read access so product images uploaded from the admin panel can be served.
 
+## Store details
+
+Company name, contact details, UPI ID and bank account are **store settings**, not code. The repository is public, so they are never committed.
+
+- Put them in the `SEED_STORE_*`, `SEED_UPI_*` and `SEED_BANK_*` variables in `apps/api/.env` (gitignored). `npm run db:seed` then writes them to the database and creates the Contact page.
+- After that, edit them any time under **Admin → Settings**. Re-running the seed never overwrites values edited in the admin panel.
+
+Customers only see the UPI ID and bank details on their own unpaid orders. They are not exposed through the public `/settings` endpoint.
+
 ## Payments
 
-Set the gateway keys in `apps/api/.env`, then enable methods under **Admin → Settings → Payment methods**.
+Enable methods under **Admin → Settings → Payment methods**.
+
+- **UPI to the store's UPI ID** (on by default). The order page shows a QR code and an "Open UPI app" link with the amount filled in. The customer then submits the UTR / transaction ID.
+- **Bank transfer (NEFT / IMPS)** (on by default). The order page shows the account details, with the order number to use as remarks. The customer submits the UTR.
+- Admin checks the bank or UPI statement and clicks **Confirm** (or **Reject** for a wrong UTR) under **Payments**. The dashboard shows how many are waiting. Unpaid UPI / bank orders hold stock for 48 hours (configurable). Orders with a submitted UTR are never auto-cancelled.
+
+The gateways below need keys in `apps/api/.env`:
 
 - **Razorpay**: `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`. Webhook URL: `https://<api-host>/api/v1/payments/webhooks/razorpay` (events `payment.captured`, `payment.failed`, `order.paid`).
 - **Cashfree**: `CASHFREE_APP_ID`, `CASHFREE_SECRET_KEY`, `CASHFREE_ENV`. Webhook URL: `https://<api-host>/api/v1/payments/webhooks/cashfree`.

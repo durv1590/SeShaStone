@@ -16,7 +16,13 @@ import { Request } from 'express';
 import { AuthUser, CurrentUser } from '../common/decorators/current-user.decorator';
 import { Public } from '../common/decorators/public.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
-import { InitiatePaymentDto, ListPaymentsDto, VerifyPaymentDto } from './payments.dto';
+import {
+  InitiatePaymentDto,
+  ListPaymentsDto,
+  RejectPaymentDto,
+  SubmitPaymentReferenceDto,
+  VerifyPaymentDto,
+} from './payments.dto';
 import { PaymentsService } from './payments.service';
 
 @ApiTags('payments')
@@ -37,6 +43,23 @@ export class PaymentsController {
     return this.payments.verify(user.id, dto);
   }
 
+  @ApiBearerAuth()
+  @Get('me/orders/:id/payment-instructions')
+  instructions(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.payments.instructions(user.id, id);
+  }
+
+  @ApiBearerAuth()
+  @Post('me/orders/:id/payment-reference')
+  @HttpCode(200)
+  submitReference(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: SubmitPaymentReferenceDto,
+  ) {
+    return this.payments.submitReference(user.id, id, dto);
+  }
+
   /** Gateway → server webhooks: /api/v1/payments/webhooks/razorpay | cashfree */
   @Public()
   @ApiExcludeEndpoint()
@@ -55,5 +78,21 @@ export class PaymentsController {
   @Get('admin/payments')
   adminList(@Query() query: ListPaymentsDto) {
     return this.payments.adminList(query);
+  }
+
+  @ApiBearerAuth()
+  @Roles(Role.ADMIN, Role.STAFF)
+  @Post('admin/payments/:id/confirm')
+  @HttpCode(200)
+  confirm(@Param('id') id: string) {
+    return this.payments.adminConfirm(id);
+  }
+
+  @ApiBearerAuth()
+  @Roles(Role.ADMIN, Role.STAFF)
+  @Post('admin/payments/:id/reject')
+  @HttpCode(200)
+  reject(@Param('id') id: string, @Body() dto: RejectPaymentDto) {
+    return this.payments.adminReject(id, dto.reason);
   }
 }

@@ -31,7 +31,7 @@ export default async function CmsPageView({ params }: { params: Params }) {
     <article className="container section" style={{ maxWidth: 760 }}>
       <h1 className="section-title">{page.title}</h1>
       {page.content.split(/\n{2,}/).map((para, i) => (
-        <p key={i} style={{ lineHeight: 1.8 }}>{para}</p>
+        <p key={i} style={{ lineHeight: 1.8, whiteSpace: 'pre-line' }}>{para}</p>
       ))}
     </article>
   );
