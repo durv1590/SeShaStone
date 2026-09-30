@@ -1,13 +1,12 @@
 import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { Role } from '@prisma/client';
-import { Roles } from '../common/decorators/roles.decorator';
+import { RequirePermissions } from '../common/decorators/permissions.decorator';
 import { AdjustStockDto, ListInventoryDto, UpdateThresholdDto } from './inventory.dto';
 import { InventoryService } from './inventory.service';
 
 @ApiTags('inventory')
 @ApiBearerAuth()
-@Roles(Role.ADMIN, Role.STAFF)
+@RequirePermissions('inventory.manage')
 @Controller('admin/inventory')
 export class InventoryController {
   constructor(private readonly inventory: InventoryService) {}

@@ -1,8 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { Role } from '@prisma/client';
 import { Public } from '../common/decorators/public.decorator';
-import { Roles } from '../common/decorators/roles.decorator';
+import { RequirePermissions } from '../common/decorators/permissions.decorator';
 import {
   AdminListProductsDto,
   CreateProductDto,
@@ -31,56 +30,56 @@ export class ProductsController {
   }
 
   @ApiBearerAuth()
-  @Roles(Role.ADMIN, Role.STAFF)
+  @RequirePermissions('products.view')
   @Get('admin/products')
   adminList(@Query() query: AdminListProductsDto) {
     return this.products.adminList(query);
   }
 
   @ApiBearerAuth()
-  @Roles(Role.ADMIN, Role.STAFF)
+  @RequirePermissions('products.manage')
   @Post('admin/products/reindex')
   reindex() {
     return this.products.reindexAll();
   }
 
   @ApiBearerAuth()
-  @Roles(Role.ADMIN, Role.STAFF)
+  @RequirePermissions('products.view')
   @Get('admin/products/:id')
   adminGet(@Param('id') id: string) {
     return this.products.adminGet(id);
   }
 
   @ApiBearerAuth()
-  @Roles(Role.ADMIN, Role.STAFF)
+  @RequirePermissions('products.manage')
   @Post('admin/products')
   create(@Body() dto: CreateProductDto) {
     return this.products.create(dto);
   }
 
   @ApiBearerAuth()
-  @Roles(Role.ADMIN, Role.STAFF)
+  @RequirePermissions('products.manage')
   @Patch('admin/products/:id')
   update(@Param('id') id: string, @Body() dto: UpdateProductDto) {
     return this.products.update(id, dto);
   }
 
   @ApiBearerAuth()
-  @Roles(Role.ADMIN)
+  @RequirePermissions('products.manage')
   @Delete('admin/products/:id')
   remove(@Param('id') id: string) {
     return this.products.remove(id);
   }
 
   @ApiBearerAuth()
-  @Roles(Role.ADMIN, Role.STAFF)
+  @RequirePermissions('products.manage')
   @Post('admin/products/:id/variants')
   addVariant(@Param('id') id: string, @Body() dto: ProductVariantDto) {
     return this.products.addVariant(id, dto);
   }
 
   @ApiBearerAuth()
-  @Roles(Role.ADMIN, Role.STAFF)
+  @RequirePermissions('products.manage')
   @Patch('admin/variants/:variantId')
   updateVariant(@Param('variantId') variantId: string, @Body() dto: UpdateVariantDto) {
     return this.products.updateVariant(variantId, dto);

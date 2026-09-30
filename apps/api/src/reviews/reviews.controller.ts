@@ -1,10 +1,9 @@
 import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { Role } from '@prisma/client';
 import { PaginationDto } from '../common/dto/pagination.dto';
 import { AuthUser, CurrentUser } from '../common/decorators/current-user.decorator';
 import { Public } from '../common/decorators/public.decorator';
-import { Roles } from '../common/decorators/roles.decorator';
+import { RequirePermissions } from '../common/decorators/permissions.decorator';
 import { CreateReviewDto, ListReviewsDto, ModerateReviewDto } from './reviews.dto';
 import { ReviewsService } from './reviews.service';
 
@@ -26,14 +25,14 @@ export class ReviewsController {
   }
 
   @ApiBearerAuth()
-  @Roles(Role.ADMIN, Role.STAFF)
+  @RequirePermissions('reviews.moderate')
   @Get('admin/reviews')
   adminList(@Query() query: ListReviewsDto) {
     return this.reviews.adminList(query);
   }
 
   @ApiBearerAuth()
-  @Roles(Role.ADMIN, Role.STAFF)
+  @RequirePermissions('reviews.moderate')
   @Patch('admin/reviews/:id')
   moderate(@Param('id') id: string, @Body() dto: ModerateReviewDto) {
     return this.reviews.moderate(id, dto.status);

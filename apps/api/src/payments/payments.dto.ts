@@ -1,4 +1,16 @@
-import { IsEnum, IsObject, IsOptional, IsString, Matches } from 'class-validator';
+import {
+  IsBoolean,
+  IsEnum,
+  IsIn,
+  IsInt,
+  IsObject,
+  IsOptional,
+  IsString,
+  Matches,
+  MaxLength,
+  Min,
+  MinLength,
+} from 'class-validator';
 import { PaymentProvider, PaymentStatus } from '@prisma/client';
 import { PaginationDto } from '../common/dto/pagination.dto';
 
@@ -26,5 +38,25 @@ export class SubmitPaymentReferenceDto {
 }
 
 export class RejectPaymentDto {
-  @IsOptional() @IsString() reason?: string;
+  @IsString() @MinLength(3) @MaxLength(300) reason: string;
+}
+
+export class CreateRefundDto {
+  /** Paise. */
+  @IsInt() @Min(1) amount: number;
+  @IsString() @MinLength(3) @MaxLength(300) reason: string;
+  @IsOptional() @IsIn(['upi', 'bank_transfer', 'original_method', 'cash']) method?: string;
+  @IsOptional() @IsString() @MaxLength(60) reference?: string;
+  /** Record as already paid out (with reference) instead of pending. */
+  @IsOptional() @IsBoolean() processed?: boolean;
+}
+
+export class UpdateRefundDto {
+  @IsIn(['PROCESSED', 'FAILED']) status: 'PROCESSED' | 'FAILED';
+  @IsOptional() @IsString() @MaxLength(60) reference?: string;
+  @IsOptional() @IsString() @MaxLength(500) notes?: string;
+}
+
+export class ListRefundsDto extends PaginationDto {
+  @IsOptional() @IsIn(['PENDING', 'PROCESSED', 'FAILED']) status?: 'PENDING' | 'PROCESSED' | 'FAILED';
 }

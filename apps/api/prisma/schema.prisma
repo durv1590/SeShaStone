@@ -1,4 +1,4 @@
-// Se Sha Stone — data model
+// SeSha Stone — data model
 // All monetary amounts are stored as integers in paise (1 INR = 100 paise).
 
 generator client {
@@ -16,8 +16,13 @@ datasource db {
 
 enum Role {
   CUSTOMER
-  STAFF
-  ADMIN
+  SUPPORT // customer support: read orders/payments/customers
+  ORDER_MANAGER // orders, payment verification, refunds
+  PRODUCT_MANAGER // catalogue and inventory
+  MARKETING_MANAGER // campaigns, banners, CMS, coupons
+  STAFF // legacy general staff (orders + catalogue)
+  ADMIN // everything except managing staff accounts
+  SUPER_ADMIN // everything
 }
 
 model Customer {
@@ -34,11 +39,25 @@ model Customer {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  addresses    Address[]
-  orders       Order[]
-  reviews      Review[]
-  wishlist     WishlistItem[]
-  couponUsages CouponUsage[]
+  addresses      Address[]
+  orders         Order[]
+  reviews        Review[]
+  wishlist       WishlistItem[]
+  couponUsages   CouponUsage[]
+  returnRequests ReturnRequest[]
+  resetTokens    PasswordResetToken[]
+}
+
+model PasswordResetToken {
+  id         String    @id @default(cuid())
+  customerId String
+  customer   Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  tokenHash  String    @unique // sha256 of the emailed token; the raw token is never stored
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([customerId])
 }
 
 model Address {
@@ -90,6 +109,15 @@ enum ProductStatus {
   ARCHIVED
 }
 
+/// Top-level jewellery line. Keeps genuine precious-metal pieces clearly
+/// separated from premium artificial jewellery.
+enum JewelleryLine {
+  GOLD
+  SILVER
+  DIAMOND
+  ARTIFICIAL
+}
+
 enum MetalType {
   GOLD
   SILVER
@@ -101,32 +129,77 @@ enum MetalType {
 }
 
 model Product {
-  id             String        @id @default(cuid())
+  id             String         @id @default(cuid())
   name           String
-  slug           String        @unique
+  slug           String         @unique
   description    String?
-  status         ProductStatus @default(DRAFT)
+  status         ProductStatus  @default(DRAFT)
   categoryId     String?
-  category       Category?     @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  category       Category?      @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  line           JewelleryLine?
   metal          MetalType?
   purity         String? // e.g. 22K, 18K, 925
   gemstone       String? // e.g. Ruby, Emerald, Diamond
-  isCertified    Boolean       @default(false)
+  isCertified    Boolean        @default(false)
   certificateUrl String?
-  tags           String[]
-  seoTitle       String?
-  seoDescription String?
-  isFeatured     Boolean       @default(false)
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+
+  // Line-specific attributes; only verified values are ever displayed.
+  hallmarkId        String? // gold: BIS HUID
+  finish            String? // silver: oxidised, rhodium, matte…
+  baseMaterial      String? // artificial: brass, copper alloy…
+  plating           String? // artificial: gold-plated, rhodium-plated…
+  stoneType         String? // artificial / coloured stones: kundan, CZ, pearl…
+  diamondCarat      Decimal? @db.Decimal(6, 3)
+  diamondCut        String?
+  diamondColour     String?
+  diamondClarity    String?
+  certificateNumber String?
+  dimensions        String?
+  careInstructions  String?
+  shippingInfo      String?
+  isReturnEligible  Boolean  @default(true)
+  videoUrl          String?
+  tags              String[]
+  seoTitle          String?
+  seoDescription    String?
+  isFeatured        Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   images       ProductImage[]
   variants     ProductVariant[]
   reviews      Review[]
   wishlistedBy WishlistItem[]
+  collections  Collection[]
 
   @@index([categoryId])
   @@index([status])
+  @@index([line])
+}
+
+enum CollectionRule {
+  MANUAL // products assigned by hand
+  NEWEST // latest active products
+  BESTSELLING // ranked by units sold on paid orders
+}
+
+model Collection {
+  id             String         @id @default(cuid())
+  name           String
+  slug           String         @unique
+  description    String?
+  heroTitle      String?
+  heroSubtitle   String?
+  heroImageUrl   String?
+  theme          String? // ivory | charcoal | emerald | burgundy
+  rule           CollectionRule @default(MANUAL)
+  isActive       Boolean        @default(true)
+  sortOrder      Int            @default(0)
+  seoTitle       String?
+  seoDescription String?
+  products       Product[]
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 }
 
 model ProductImage {
@@ -147,7 +220,8 @@ model ProductVariant {
   sku            String   @unique
   title          String // e.g. "Size 12 / 18K"
   size           String?
-  weightGrams    Decimal? @db.Decimal(10, 3)
+  weightGrams    Decimal? @db.Decimal(10, 3) // gross weight
+  netWeightGrams Decimal? @db.Decimal(10, 3)
   price          Int // paise, selling price incl. making charges
   compareAtPrice Int? // paise, MRP for strike-through
   makingCharges  Int? // paise
@@ -204,12 +278,16 @@ model InventoryMovement {
 // ─────────────────────────────────────────────────────────────
 
 enum OrderStatus {
-  PENDING_PAYMENT
-  PAID
+  PENDING_PAYMENT // "New / payment pending"
+  PAID // "Confirmed"
   PROCESSING
+  PACKED
   SHIPPED
+  OUT_FOR_DELIVERY
   DELIVERED
   CANCELLED
+  RETURN_REQUESTED
+  RETURNED
   REFUNDED
 }
 
@@ -227,15 +305,25 @@ model Order {
   currency        String      @default("INR")
   couponCode      String?
   shippingAddress Json // snapshot of Address at checkout
+  billingAddress  Json? // snapshot; null = same as shipping
+  customerEmail   String? // snapshot for tracking and notifications
+  customerPhone   String?
   notes           String?
   trackingNumber  String?
+  courier         String?
+  idempotencyKey  String? // client-generated per checkout attempt
+  shippedAt       DateTime?
+  deliveredAt     DateTime?
   placedAt        DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
-  items       OrderItem[]
-  payments    Payment[]
-  couponUsage CouponUsage?
+  items          OrderItem[]
+  payments       Payment[]
+  couponUsage    CouponUsage?
+  refunds        Refund[]
+  returnRequests ReturnRequest[]
 
+  @@unique([customerId, idempotencyKey])
   @@index([customerId])
   @@index([status])
 }
@@ -266,9 +354,12 @@ enum PaymentProvider {
 
 enum PaymentStatus {
   CREATED
-  PENDING
-  CAPTURED
+  PENDING // awaiting payment
+  SUBMITTED // customer reported UTR / evidence; under verification
+  CAPTURED // paid (gateway-captured or admin-verified)
   FAILED
+  EXPIRED // unpaid hold ran out
+  PARTIALLY_REFUNDED
   REFUNDED
 }
 
@@ -284,10 +375,85 @@ model Payment {
   providerPaymentId String?
   method            String? // upi, card, netbanking, wallet
   raw               Json? // last gateway payload
+  submittedAt       DateTime?
+  verifiedAt        DateTime?
+  verifiedById      String?
+  rejectionReason   String? // shown to the customer after a rejected UTR
+  refundedAmount    Int             @default(0) // paise
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
 
+  evidence PaymentEvidence[]
+  refunds  Refund[]
+
   @@index([orderId])
+  @@index([status])
+}
+
+/// Customer-uploaded proof (screenshot / PDF). Never treated as proof of payment
+/// on its own — an admin must match it against the actual bank/UPI statement.
+model PaymentEvidence {
+  id         String   @id @default(cuid())
+  paymentId  String
+  payment    Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  fileName   String
+  mimeType   String
+  size       Int
+  sha256     String
+  data       Bytes
+  uploadedAt DateTime @default(now())
+
+  @@index([paymentId])
+}
+
+enum RefundStatus {
+  PENDING
+  PROCESSED
+  FAILED
+}
+
+model Refund {
+  id          String       @id @default(cuid())
+  orderId     String
+  order       Order        @relation(fields: [orderId], references: [id])
+  paymentId   String?
+  payment     Payment?     @relation(fields: [paymentId], references: [id])
+  amount      Int // paise
+  reason      String
+  status      RefundStatus @default(PENDING)
+  method      String? // upi, bank_transfer, original_method
+  reference   String? // UTR of the refund transfer
+  notes       String?
+  createdById String?
+  processedAt DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([orderId])
+  @@index([status])
+}
+
+enum ReturnStatus {
+  REQUESTED
+  APPROVED
+  REJECTED
+  RECEIVED
+}
+
+model ReturnRequest {
+  id         String       @id @default(cuid())
+  orderId    String
+  order      Order        @relation(fields: [orderId], references: [id])
+  customerId String
+  customer   Customer     @relation(fields: [customerId], references: [id])
+  reason     String
+  status     ReturnStatus @default(REQUESTED)
+  adminNote  String?
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  @@index([orderId])
+  @@index([status])
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -392,19 +558,24 @@ enum BannerPlacement {
   POPUP
 }
 
+/// Website campaign / banner. Desktop 1920×700, tablet 1280×700, mobile 1080×1350.
 model Banner {
-  id        String          @id @default(cuid())
-  title     String
-  subtitle  String?
-  imageUrl  String
-  linkUrl   String?
-  placement BannerPlacement @default(HOME_HERO)
-  sortOrder Int             @default(0)
-  isActive  Boolean         @default(true)
-  startsAt  DateTime?
-  endsAt    DateTime?
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
+  id             String          @id @default(cuid())
+  title          String
+  subtitle       String?
+  imageUrl       String // desktop
+  tabletImageUrl String?
+  mobileImageUrl String?
+  ctaLabel       String?
+  linkUrl        String?
+  theme          String? // e.g. diwali, bridal, gold — inherits brand tokens
+  placement      BannerPlacement @default(HOME_HERO)
+  sortOrder      Int             @default(0)
+  isActive       Boolean         @default(true)
+  startsAt       DateTime?
+  endsAt         DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 }
 
 model NewsletterSubscriber {
@@ -438,4 +609,64 @@ model Setting {
   key       String   @id // e.g. store.name, shipping.flatRate, payments.enabledProviders
   value     Json
   updatedAt DateTime @updatedAt
+  updatedBy String?
+}
+
+/// Binary business assets that must not live in a public folder (e.g. the UPI QR).
+model BusinessAsset {
+  key          String   @id // e.g. "upi-qr"
+  mimeType     String
+  data         Bytes
+  sha256       String
+  decodedValue String? // e.g. the upi://pay URI decoded from the QR
+  uploadedBy   String?
+  updatedAt    DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────────────────────────
+// Audit & notifications
+// ─────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  actorEmail String?
+  action     String // e.g. settings.update, payment.verify, order.status
+  entityType String
+  entityId   String?
+  before     Json?
+  after      Json?
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
+enum NotificationChannel {
+  EMAIL
+  WHATSAPP
+}
+
+enum NotificationStatus {
+  SENT
+  SKIPPED // no provider configured — never reported as sent
+  FAILED
+}
+
+model Notification {
+  id         String              @id @default(cuid())
+  channel    NotificationChannel @default(EMAIL)
+  template   String // e.g. order.placed, payment.verified
+  recipient  String
+  subject    String?
+  status     NotificationStatus
+  error      String?
+  customerId String?
+  orderId    String?
+  createdAt  DateTime            @default(now())
+
+  @@index([orderId])
+  @@index([createdAt])
 }

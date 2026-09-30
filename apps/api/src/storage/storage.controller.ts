@@ -1,8 +1,7 @@
 import { Body, Controller, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { IsIn, IsString, Matches } from 'class-validator';
-import { Role } from '@prisma/client';
-import { Roles } from '../common/decorators/roles.decorator';
+import { RequirePermissions } from '../common/decorators/permissions.decorator';
 import { StorageService } from './storage.service';
 
 class CreateUploadDto {
@@ -19,7 +18,7 @@ class CreateUploadDto {
 @ApiTags('storage')
 @ApiBearerAuth()
 @Controller('admin/uploads')
-@Roles(Role.ADMIN, Role.STAFF)
+@RequirePermissions('media.upload')
 export class StorageController {
   constructor(private readonly storage: StorageService) {}
 

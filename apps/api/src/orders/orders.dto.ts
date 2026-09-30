@@ -6,9 +6,13 @@ import {
   IsEnum,
   IsInt,
   IsOptional,
+  IsEmail,
   IsString,
+  IsUUID,
   Max,
+  MaxLength,
   Min,
+  MinLength,
   ValidateNested,
 } from 'class-validator';
 import { OrderStatus, PaymentProvider } from '@prisma/client';
@@ -28,9 +32,13 @@ export class CheckoutDto {
   items: CheckoutItemDto[];
 
   @IsString() addressId: string;
+  /** Omit when billing address is the same as delivery. */
+  @IsOptional() @IsString() billingAddressId?: string;
   @IsOptional() @IsString() couponCode?: string;
   @IsEnum(PaymentProvider) paymentProvider: PaymentProvider;
-  @IsOptional() @IsString() notes?: string;
+  @IsOptional() @IsString() @MaxLength(500) notes?: string;
+  /** Client-generated UUID per checkout attempt; resubmitting returns the same order. */
+  @IsOptional() @IsUUID() idempotencyKey?: string;
 }
 
 export class QuoteDto {
@@ -50,5 +58,16 @@ export class ListOrdersDto extends PaginationDto {
 
 export class UpdateOrderStatusDto {
   @IsEnum(OrderStatus) status: OrderStatus;
-  @IsOptional() @IsString() trackingNumber?: string;
+  @IsOptional() @IsString() @MaxLength(60) trackingNumber?: string;
+  @IsOptional() @IsString() @MaxLength(60) courier?: string;
+  @IsOptional() @IsString() @MaxLength(300) reason?: string;
+}
+
+export class ReturnRequestDto {
+  @IsString() @MinLength(5) @MaxLength(1000) reason: string;
+}
+
+export class TrackOrderDto {
+  @IsString() @MaxLength(40) orderNumber: string;
+  @IsEmail() email: string;
 }

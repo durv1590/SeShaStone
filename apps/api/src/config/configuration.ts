@@ -1,5 +1,14 @@
 export default () => ({
   port: Number(process.env.PORT ?? 4000),
+  webUrl: process.env.WEB_URL ?? 'http://localhost:3000',
+  smtp: {
+    host: process.env.SMTP_HOST || undefined,
+    port: Number(process.env.SMTP_PORT ?? 587),
+    secure: process.env.SMTP_SECURE === 'true',
+    user: process.env.SMTP_USER || undefined,
+    pass: process.env.SMTP_PASS || undefined,
+    from: process.env.SMTP_FROM || undefined,
+  },
   jwt: {
     secret: process.env.JWT_SECRET ?? 'dev-secret',
     expiresIn: process.env.JWT_EXPIRES_IN ?? '7d',

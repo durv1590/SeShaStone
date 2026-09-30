@@ -1,8 +1,7 @@
 import { Body, Controller, Get, Param, Patch, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { Role } from '@prisma/client';
 import { AuthUser, CurrentUser } from '../common/decorators/current-user.decorator';
-import { Roles } from '../common/decorators/roles.decorator';
+import { RequirePermissions } from '../common/decorators/permissions.decorator';
 import { AdminUpdateCustomerDto, ListCustomersDto, UpdateProfileDto } from './customers.dto';
 import { CustomersService } from './customers.service';
 
@@ -22,19 +21,19 @@ export class CustomersController {
     return this.customers.updateProfile(user.id, dto);
   }
 
-  @Roles(Role.ADMIN, Role.STAFF)
+  @RequirePermissions('customers.view')
   @Get('admin/customers')
   list(@Query() query: ListCustomersDto) {
     return this.customers.list(query);
   }
 
-  @Roles(Role.ADMIN, Role.STAFF)
+  @RequirePermissions('customers.view')
   @Get('admin/customers/:id')
   findOne(@Param('id') id: string) {
     return this.customers.findOne(id);
   }
 
-  @Roles(Role.ADMIN)
+  @RequirePermissions('customers.manage')
   @Patch('admin/customers/:id')
   update(@Param('id') id: string, @Body() dto: AdminUpdateCustomerDto) {
     return this.customers.adminUpdate(id, dto);

@@ -1,9 +1,8 @@
 import { Body, Controller, Get, HttpCode, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { Role } from '@prisma/client';
 import { PaginationDto } from '../common/dto/pagination.dto';
 import { Public } from '../common/decorators/public.decorator';
-import { Roles } from '../common/decorators/roles.decorator';
+import { RequirePermissions } from '../common/decorators/permissions.decorator';
 import { CreateCampaignDto, SubscribeDto, UpdateCampaignDto } from './marketing.dto';
 import { MarketingService } from './marketing.service';
 
@@ -27,35 +26,35 @@ export class MarketingController {
   }
 
   @ApiBearerAuth()
-  @Roles(Role.ADMIN, Role.STAFF)
+  @RequirePermissions('marketing.manage')
   @Get('admin/marketing/subscribers')
   subscribers(@Query() query: PaginationDto) {
     return this.marketing.subscribers(query);
   }
 
   @ApiBearerAuth()
-  @Roles(Role.ADMIN, Role.STAFF)
+  @RequirePermissions('marketing.manage')
   @Get('admin/marketing/campaigns')
   campaigns() {
     return this.marketing.campaigns();
   }
 
   @ApiBearerAuth()
-  @Roles(Role.ADMIN)
+  @RequirePermissions('marketing.manage')
   @Post('admin/marketing/campaigns')
   createCampaign(@Body() dto: CreateCampaignDto) {
     return this.marketing.createCampaign(dto);
   }
 
   @ApiBearerAuth()
-  @Roles(Role.ADMIN)
+  @RequirePermissions('marketing.manage')
   @Patch('admin/marketing/campaigns/:id')
   updateCampaign(@Param('id') id: string, @Body() dto: UpdateCampaignDto) {
     return this.marketing.updateCampaign(id, dto);
   }
 
   @ApiBearerAuth()
-  @Roles(Role.ADMIN)
+  @RequirePermissions('marketing.manage')
   @Post('admin/marketing/campaigns/:id/cancel')
   @HttpCode(200)
   cancelCampaign(@Param('id') id: string) {

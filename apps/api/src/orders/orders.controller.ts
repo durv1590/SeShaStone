@@ -1,9 +1,18 @@
 import { Body, Controller, Get, HttpCode, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { Role } from '@prisma/client';
+import { Throttle } from '@nestjs/throttler';
+import { Actor, CurrentActor } from '../common/decorators/actor.decorator';
 import { AuthUser, CurrentUser } from '../common/decorators/current-user.decorator';
-import { Roles } from '../common/decorators/roles.decorator';
-import { CheckoutDto, ListOrdersDto, QuoteDto, UpdateOrderStatusDto } from './orders.dto';
+import { RequirePermissions } from '../common/decorators/permissions.decorator';
+import { Public } from '../common/decorators/public.decorator';
+import {
+  CheckoutDto,
+  ListOrdersDto,
+  QuoteDto,
+  ReturnRequestDto,
+  TrackOrderDto,
+  UpdateOrderStatusDto,
+} from './orders.dto';
 import { OrdersService } from './orders.service';
 
 @ApiTags('orders')
@@ -19,9 +28,19 @@ export class OrdersController {
     return { ...quote, couponCode: coupon?.code ?? null };
   }
 
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post('checkout')
   checkout(@CurrentUser() user: AuthUser, @Body() dto: CheckoutDto) {
     return this.orders.checkout(user.id, dto);
+  }
+
+  /** Public tracking — rate-limited to stop order-number guessing. */
+  @Public()
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Post('orders/track')
+  @HttpCode(200)
+  track(@Body() dto: TrackOrderDto) {
+    return this.orders.track(dto.orderNumber, dto.email);
   }
 
   @Get('me/orders')
@@ -40,27 +59,33 @@ export class OrdersController {
     return this.orders.cancelMine(user.id, id);
   }
 
-  @Roles(Role.ADMIN, Role.STAFF)
+  @Post('me/orders/:id/return')
+  @HttpCode(200)
+  requestReturn(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: ReturnRequestDto) {
+    return this.orders.requestReturn(user.id, id, dto.reason);
+  }
+
+  @RequirePermissions('orders.view')
   @Get('admin/orders')
   adminList(@Query() query: ListOrdersDto) {
     return this.orders.adminList(query);
   }
 
-  @Roles(Role.ADMIN, Role.STAFF)
+  @RequirePermissions('dashboard.view')
   @Get('admin/dashboard')
   stats() {
     return this.orders.stats();
   }
 
-  @Roles(Role.ADMIN, Role.STAFF)
+  @RequirePermissions('orders.view')
   @Get('admin/orders/:id')
   adminGet(@Param('id') id: string) {
     return this.orders.adminGet(id);
   }
 
-  @Roles(Role.ADMIN, Role.STAFF)
+  @RequirePermissions('orders.manage')
   @Patch('admin/orders/:id/status')
-  updateStatus(@Param('id') id: string, @Body() dto: UpdateOrderStatusDto) {
-    return this.orders.adminUpdateStatus(id, dto);
+  updateStatus(@CurrentActor() actor: Actor, @Param('id') id: string, @Body() dto: UpdateOrderStatusDto) {
+    return this.orders.adminUpdateStatus(actor, id, dto);
   }
 }

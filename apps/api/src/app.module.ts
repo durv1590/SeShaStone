@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import configuration from './config/configuration';
 import { PrismaModule } from './prisma/prisma.module';
 import { RedisModule } from './redis/redis.module';
@@ -23,15 +24,22 @@ import { WishlistModule } from './wishlist/wishlist.module';
 import { CmsModule } from './cms/cms.module';
 import { MarketingModule } from './marketing/marketing.module';
 import { SettingsModule } from './settings/settings.module';
+import { AuditModule } from './audit/audit.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, load: [configuration] }),
+    // Default: 120 requests per minute per IP; sensitive endpoints set stricter limits.
+    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]),
     // Infrastructure
     PrismaModule,
     RedisModule,
     StorageModule,
     SearchModule,
+    AuditModule,
+    NotificationsModule,
     // Domain
     AuthModule,
     HealthModule,
@@ -48,9 +56,11 @@ import { SettingsModule } from './settings/settings.module';
     CmsModule,
     MarketingModule,
     SettingsModule,
+    UsersModule,
   ],
   providers: [
-    // Every route requires a JWT unless marked @Public(); @Roles() narrows further.
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    // Every route requires a JWT unless marked @Public(); @RequirePermissions() narrows further.
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
   ],
