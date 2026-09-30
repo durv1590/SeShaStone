@@ -61,7 +61,7 @@ The brand board is at [`brand/seshastone-brand-reference.png`](brand/seshastone-
 - **Collections:** Gold, Silver, Diamond and Premium Artificial Jewellery are defined in `apps/web/lib/collections.ts`. Gold and Silver filter by metal, Diamond by gemstone, and Premium Artificial by the `premium-artificial-jewellery` category.
 - **Hero:** to put a photo behind the home-page hero, add a *Home hero* banner under **Admin → CMS**.
 
-The store's PhonePe QR code is kept at [`public/payment/upi-qr/current-upi-qr.png`](public/payment/upi-qr/current-upi-qr.png) for reference. It encodes the account's `@ibl` handle. Checkout does not show this image. It generates its own QR for the UPI ID set in **Admin → Settings**, with the order amount already filled in.
+The store's PhonePe QR code is kept at [`public/payment/upi-qr/current-upi-qr.png`](public/payment/upi-qr/current-upi-qr.png) for reference. Checkout pays the UPI ID and payee name set in **Admin → Settings**. Before this image is shown to customers, its encoded UPI ID must match that setting.
 
 ## Store details
 
