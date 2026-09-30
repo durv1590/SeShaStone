@@ -1,0 +1,53 @@
+# Local infrastructure for Se Sha Stone.
+# Postgres (primary DB), Redis (cache/sessions/rate limits),
+# MinIO (S3-compatible object storage), Meilisearch (product search).
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: seshastone
+      POSTGRES_PASSWORD: seshastone
+      POSTGRES_DB: seshastone
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: seshastone
+      MINIO_ROOT_PASSWORD: seshastone-secret
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.11
+    restart: unless-stopped
+    environment:
+      MEILI_MASTER_KEY: seshastone-meili-master-key
+      MEILI_ENV: development
+    ports:
+      - "7700:7700"
+    volumes:
+      - meili-data:/meili_data
+
+volumes:
+  postgres-data:
+  redis-data:
+  minio-data:
+  meili-data:
