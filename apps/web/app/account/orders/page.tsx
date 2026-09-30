@@ -1,93 +1,50 @@
 'use client';
 
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
-import { Suspense, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { AccountShell } from '@/components/account-shell';
+import { StatusPill } from '@/components/ui';
 import { api, Order, Paginated } from '@/lib/api';
 import { formatPrice } from '@/lib/format';
-import { payForOrder } from '@/lib/payments';
 import { useStore } from '@/lib/store';
 
-const isManual = (o: Order) =>
-  !!o.payments?.some((p) => p.provider === 'UPI_DIRECT' || p.provider === 'BANK_TRANSFER');
-
-function Orders() {
+export default function OrdersPage() {
   const { token } = useStore();
-  const placed = useSearchParams().get('placed');
   const [orders, setOrders] = useState<Order[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const load = async () => {
-    if (!token) return;
-    try {
-      setOrders((await api<Paginated<Order>>('/me/orders', { token })).items);
-    } catch (err) {
-      setError((err as Error).message);
-    }
-  };
-
   useEffect(() => {
-    void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (!token) return;
+    api<Paginated<Order>>('/me/orders?pageSize=50', { token }).then((r) => setOrders(r.items)).catch((e) => setError(e.message));
   }, [token]);
 
-  if (!token) {
-    return (
-      <p>
-        Please <Link href="/login?next=/account/orders">login</Link> to see your orders.
-      </p>
-    );
-  }
-
   return (
-    <>
-      {placed && <p className="summary">Thank you! Order <strong>{placed}</strong> has been placed.</p>}
-      {error && <p className="error">{error}</p>}
-      {orders?.length === 0 && <p className="muted">You haven&apos;t placed any orders yet.</p>}
-      {!!orders?.length && (
-        <table className="table">
-          <thead>
-            <tr><th>Order</th><th>Date</th><th>Items</th><th>Total</th><th>Status</th><th /></tr>
-          </thead>
-          <tbody>
-            {orders.map((o) => (
-              <tr key={o.id}>
-                <td><Link href={`/account/orders/${o.id}`}>{o.orderNumber}</Link></td>
-                <td>{new Date(o.placedAt).toLocaleDateString('en-IN')}</td>
-                <td>{o.items.map((i) => `${i.productName} × ${i.quantity}`).join(', ')}</td>
-                <td>{formatPrice(o.total)}</td>
-                <td>{o.status.replace('_', ' ').toLowerCase()}</td>
-                <td>
-                  {o.status === 'PENDING_PAYMENT' && isManual(o) && (
-                    <Link className="chip" href={`/account/orders/${o.id}`}>Pay now</Link>
-                  )}
-                  {o.status === 'PENDING_PAYMENT' && !isManual(o) && (
-                    <button
-                      className="chip"
-                      onClick={() =>
-                        payForOrder(o.id, token).then(load, (e) => setError(e.message))
-                      }
-                    >
-                      Pay now
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+    <AccountShell title="My Orders">
+      {error && <p className="error" role="alert">{error}</p>}
+      {orders?.length === 0 && (
+        <div className="empty">
+          <p>You haven’t placed any orders yet.</p>
+          <Link href="/collections/new-arrivals" className="link">Discover new arrivals</Link>
+        </div>
       )}
-    </>
-  );
-}
-
-export default function OrdersPage() {
-  return (
-    <div className="container section">
-      <h1 className="section-title">My orders</h1>
-      <Suspense>
-        <Orders />
-      </Suspense>
-    </div>
+      {!!orders?.length && (
+        <div className="table-wrap">
+          <table className="table">
+            <thead><tr><th>Order</th><th>Date</th><th>Status</th><th>Total</th><th /></tr></thead>
+            <tbody>
+              {orders.map((o) => (
+                <tr key={o.id}>
+                  <td><Link href={`/account/orders/${o.id}`} className="link">{o.orderNumber}</Link><br /><span className="muted" style={{ fontSize: '0.78rem' }}>{o.items.length} item{o.items.length > 1 ? 's' : ''}</span></td>
+                  <td>{new Date(o.placedAt).toLocaleDateString('en-IN', { dateStyle: 'medium' })}</td>
+                  <td><StatusPill status={o.status} /></td>
+                  <td className="price">{formatPrice(o.total)}</td>
+                  <td>{o.status === 'PENDING_PAYMENT' ? <Link href={`/account/orders/${o.id}`} className="btn btn--sm">Pay now</Link> : <Link href={`/account/orders/${o.id}`} className="link">View</Link>}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </AccountShell>
   );
 }

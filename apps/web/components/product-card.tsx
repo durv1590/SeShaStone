@@ -1,34 +1,54 @@
 import Link from 'next/link';
-import { Monogram } from '@/components/brand';
-import { ProductSummary } from '@/lib/api';
+import type { ProductSummary } from '@/lib/api';
 import { formatPrice } from '@/lib/format';
+import { LINE_LABEL } from '@/lib/lines';
+import { BrandMark } from './brand';
+import { WishlistButton } from './wishlist-button';
 
-export function ProductCard({ product }: { product: ProductSummary }) {
-  const image = product.images[0];
-  const compareAt = product.variants[0]?.compareAtPrice;
+/** JewelleryCard: image (second image on hover), line tag, name, verified material, price. */
+export function ProductCard({ product, priority = false }: { product: ProductSummary; priority?: boolean }) {
+  const [first, second] = product.images;
+  const compareAt = product.variants.find((v) => v.price === product.minPrice)?.compareAtPrice;
+  const meta = [product.purity, product.metal?.replace('_', ' ').toLowerCase(), product.gemstone].filter(Boolean).join(' · ');
   return (
-    <Link href={`/products/${product.slug}`} className="card">
-      <div className="card-image">
-        {image ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={image.url} alt={image.alt ?? product.name} loading="lazy" />
+    <article className="card">
+      <Link href={`/product/${product.slug}`} className="card__media" aria-label={product.name}>
+        {first ? (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={first.url} alt={first.alt ?? product.name} loading={priority ? 'eager' : 'lazy'} decoding="async" />
+            {second && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={second.url} alt="" loading="lazy" decoding="async" aria-hidden="true" />
+            )}
+          </>
         ) : (
-          <Monogram size={72} />
+          <BrandMark size={64} />
         )}
-      </div>
-      <div className="card-body">
-        <h3 className="card-title">{product.name}</h3>
-        <p className="card-meta">
-          {[product.purity, product.metal?.replace('_', ' ').toLowerCase(), product.gemstone]
-            .filter(Boolean)
-            .join(' · ')}
-        </p>
-        <span className="price">
-          {product.minPrice !== product.maxPrice && 'From '}
+        {product.line && (
+          <span className={`card__tag${product.line === 'ARTIFICIAL' ? ' card__tag--artificial' : ''}`}>
+            {LINE_LABEL[product.line]}
+          </span>
+        )}
+      </Link>
+      <WishlistButton productId={product.id} name={product.name} className="card__wish" />
+      <div className="card__body">
+        <h3 className="card__title"><Link href={`/product/${product.slug}`}>{product.name}</Link></h3>
+        {meta && <p className="card__meta" style={{ margin: 0, textTransform: 'capitalize' }}>{meta}</p>}
+        <p className="price" style={{ margin: 0 }}>
+          {product.minPrice !== product.maxPrice && <span className="muted" style={{ fontWeight: 400 }}>From </span>}
           {formatPrice(product.minPrice)}
           {compareAt && compareAt > product.minPrice && <s>{formatPrice(compareAt)}</s>}
-        </span>
+        </p>
       </div>
-    </Link>
+    </article>
+  );
+}
+
+export function ProductGrid({ products, columns = 4 }: { products: ProductSummary[]; columns?: 3 | 4 }) {
+  return (
+    <div className={`grid${columns === 3 ? ' grid--3' : ''}`}>
+      {products.map((p, i) => <ProductCard key={p.id} product={p} priority={i < 2} />)}
+    </div>
   );
 }
