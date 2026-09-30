@@ -1,13 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { Suspense, useState } from 'react';
 import { Paginated } from '@/lib/api';
 import { formatPrice } from '@/lib/format';
 import { useApi } from '@/lib/use-api';
 import { formatDate, Pager, StatusBadge } from '@/components/ui';
 
-const STATUSES = ['PENDING_PAYMENT', 'PAID', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'REFUNDED'];
+const STATUSES = ['PENDING_PAYMENT', 'PAID', 'PROCESSING', 'PACKED', 'SHIPPED', 'OUT_FOR_DELIVERY', 'DELIVERED', 'RETURN_REQUESTED', 'RETURNED', 'CANCELLED', 'REFUNDED'];
 
 interface OrderRow {
   id: string;
@@ -19,9 +20,9 @@ interface OrderRow {
   _count: { items: number };
 }
 
-export default function OrdersPage() {
+function Orders() {
   const [page, setPage] = useState(1);
-  const [status, setStatus] = useState('');
+  const [status, setStatus] = useState(useSearchParams().get('status') ?? '');
   const [q, setQ] = useState('');
   const params = new URLSearchParams({ page: String(page), ...(status && { status }), ...(q && { q }) });
   const { data, error } = useApi<Paginated<OrderRow>>(`/admin/orders?${params}`);
@@ -30,7 +31,7 @@ export default function OrdersPage() {
     <>
       <h1>Orders</h1>
       <div className="toolbar">
-        <input className="input" placeholder="Order no. or email" value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} />
+        <input className="input" placeholder="Order no., email or phone" value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} />
         <select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}>
           <option value="">All statuses</option>
           {STATUSES.map((s) => <option key={s} value={s}>{s.replace(/_/g, ' ').toLowerCase()}</option>)}
@@ -59,4 +60,8 @@ export default function OrdersPage() {
       {data && <Pager page={data.page} totalPages={data.totalPages} onPage={setPage} />}
     </>
   );
+}
+
+export default function OrdersPage() {
+  return <Suspense><Orders /></Suspense>;
 }

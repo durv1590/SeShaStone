@@ -1,17 +1,17 @@
 :root {
-  /* SeSha Stone brand palette */
-  --bg: #f8f6f1;
+  /* SeSha Stone brand palette (master brief §5) */
+  --bg: #f7f2e8;
   --surface: #ffffff;
-  --sidebar: #1b1b1b;
+  --sidebar: #181818;
   --sidebar-text: #d9d2c4;
-  --gold: #d4af37;
-  --text: #1b1b1b;
-  --muted: #6b645b;
+  --gold: #d9af57;
+  --text: #181818;
+  --muted: #6a6258;
   --accent: #0e4a3a;
-  --border: #e4ddd0;
-  --danger: #722f37;
+  --border: #e3d9c6;
+  --danger: #722737;
   --ok: #0e4a3a;
-  --radius: 6px;
+  --radius: 4px;
 }
 
 * { box-sizing: border-box; }
@@ -27,6 +27,21 @@ h2 { font-size: 1.1rem; margin: 0 0 12px; }
 .sidebar a { padding: 9px 10px; border-radius: 6px; }
 .sidebar a:hover, .sidebar a[aria-current='page'] { background: rgba(212, 175, 55, 0.12); color: var(--gold); }
 .sidebar .spacer { flex: 1; }
+.sidebar .whoami { padding: 10px; display: grid; color: #fff; font-size: 0.85rem; }
+.sidebar .whoami small { color: var(--sidebar-text); text-transform: capitalize; }
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.kv { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 0; }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; font-weight: 500; word-break: break-word; }
+.notice { padding: 12px 14px; border-radius: var(--radius); background: #f3ead5; border: 1px solid #e6d5a8; }
+.notice.ok { background: #e5efe9; border-color: #b9d3c6; }
+.notice.bad { background: #f6e6e8; border-color: #e3c0c5; }
+.qr-preview { width: 200px; border: 1px solid var(--border); border-radius: var(--radius); background: #fff; padding: 8px; }
+.section-title { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.section-title h2 { margin: 0; }
+@media (max-width: 800px) { .grid-2 { grid-template-columns: 1fr; } }
 .content { padding: 28px; min-width: 0; }
 
 .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 16px; }

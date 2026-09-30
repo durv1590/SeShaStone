@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
-import { Playfair_Display } from 'next/font/google';
+import { Cormorant_Garamond } from 'next/font/google';
 import './globals.css';
 
-const display = Playfair_Display({ subsets: ['latin'], variable: '--font-display', display: 'swap' });
+const display = Cormorant_Garamond({ subsets: ['latin'], weight: ['600'], variable: '--font-display', display: 'swap' });
 
 export const metadata: Metadata = {
   title: { default: 'Admin · SeSha Stone', template: '%s · SeSha Stone Admin' },

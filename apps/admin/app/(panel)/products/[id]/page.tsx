@@ -2,7 +2,7 @@
 
 import { use, useState } from 'react';
 import { api } from '@/lib/api';
-import { formatPrice } from '@/lib/format';
+import { formatPrice, rupeesToPaise } from '@/lib/format';
 import { useApi } from '@/lib/use-api';
 import { ProductFields, ProductFieldsForm } from '@/components/product-form';
 
@@ -26,7 +26,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
   async function editPrice(v: Variant) {
     const input = prompt(`New price for ${v.sku} (₹)`, String(v.price / 100));
     if (!input) return;
-    await api(`/admin/variants/${v.id}`, { method: 'PATCH', body: JSON.stringify({ price: Math.round(Number(input) * 100) }) });
+    await api(`/admin/variants/${v.id}`, { method: 'PATCH', body: JSON.stringify({ price: rupeesToPaise(input) }) });
     await reload();
   }
 

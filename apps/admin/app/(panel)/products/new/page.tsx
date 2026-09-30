@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { api } from '@/lib/api';
+import { rupeesToPaise } from '@/lib/format';
 import { ProductFieldsForm } from '@/components/product-form';
 
 interface VariantDraft {
@@ -10,13 +11,13 @@ interface VariantDraft {
   title: string;
   size: string;
   weightGrams: string;
+  netWeightGrams: string;
   price: string;
   compareAtPrice: string;
   stock: string;
 }
 
-const emptyVariant: VariantDraft = { sku: '', title: '', size: '', weightGrams: '', price: '', compareAtPrice: '', stock: '0' };
-const rupeesToPaise = (v: string) => Math.round(Number(v) * 100);
+const emptyVariant: VariantDraft = { sku: '', title: '', size: '', weightGrams: '', netWeightGrams: '', price: '', compareAtPrice: '', stock: '0' };
 
 export default function NewProductPage() {
   const router = useRouter();
@@ -40,6 +41,7 @@ export default function NewProductPage() {
                 title: v.title || v.size || 'Default',
                 size: v.size || undefined,
                 weightGrams: v.weightGrams ? Number(v.weightGrams) : undefined,
+                netWeightGrams: v.netWeightGrams ? Number(v.netWeightGrams) : undefined,
                 price: rupeesToPaise(v.price),
                 compareAtPrice: v.compareAtPrice ? rupeesToPaise(v.compareAtPrice) : undefined,
                 stock: Number(v.stock) || 0,
@@ -54,12 +56,12 @@ export default function NewProductPage() {
           <div className="table-wrap">
             <table className="table">
               <thead>
-                <tr><th>SKU</th><th>Title</th><th>Size</th><th>Weight (g)</th><th>Price (₹)</th><th>MRP (₹)</th><th>Stock</th><th /></tr>
+                <tr><th>SKU</th><th>Title</th><th>Size</th><th>Gross wt (g)</th><th>Net wt (g)</th><th>Price (₹)</th><th>MRP (₹)</th><th>Stock</th><th /></tr>
               </thead>
               <tbody>
                 {variants.map((v, i) => (
                   <tr key={i}>
-                    {(['sku', 'title', 'size', 'weightGrams', 'price', 'compareAtPrice', 'stock'] as const).map((key) => (
+                    {(['sku', 'title', 'size', 'weightGrams', 'netWeightGrams', 'price', 'compareAtPrice', 'stock'] as const).map((key) => (
                       <td key={key}>
                         <input
                           className="input"

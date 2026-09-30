@@ -4,24 +4,53 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { getToken, setToken } from '@/lib/api';
+import { SessionProvider, useSession } from './session';
 
-const NAV = [
-  ['/', 'Dashboard'],
-  ['/orders', 'Orders'],
-  ['/products', 'Products'],
-  ['/categories', 'Categories'],
-  ['/inventory', 'Inventory'],
-  ['/customers', 'Customers'],
-  ['/coupons', 'Coupons'],
-  ['/reviews', 'Reviews'],
-  ['/cms', 'CMS'],
-  ['/marketing', 'Marketing'],
-  ['/payments', 'Payments'],
-  ['/settings', 'Settings'],
-] as const;
+/** Navigation filtered by the signed-in role's permissions. */
+const NAV: [href: string, label: string, permission: string][] = [
+  ['/', 'Dashboard', 'dashboard.view'],
+  ['/orders', 'Orders', 'orders.view'],
+  ['/payments', 'Payments', 'payments.view'],
+  ['/refunds', 'Refunds', 'refunds.manage'],
+  ['/products', 'Products', 'products.view'],
+  ['/categories', 'Categories', 'products.view'],
+  ['/collections', 'Collections', 'products.view'],
+  ['/inventory', 'Inventory', 'inventory.manage'],
+  ['/customers', 'Customers', 'customers.view'],
+  ['/reviews', 'Reviews', 'reviews.moderate'],
+  ['/coupons', 'Coupons', 'marketing.manage'],
+  ['/cms', 'Banners & CMS', 'content.manage'],
+  ['/marketing', 'Marketing', 'marketing.manage'],
+  ['/settings', 'Settings', 'settings.view'],
+  ['/users', 'Staff & roles', 'users.manage'],
+  ['/audit-logs', 'Audit log', 'audit.view'],
+];
+
+function Nav({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const { me, can } = useSession();
+  return (
+    <div className="shell">
+      <aside className="sidebar" aria-label="Admin navigation">
+        <div className="brand">SeSha Stone<small>ADMIN</small></div>
+        {NAV.filter(([, , p]) => can(p)).map(([href, label]) => {
+          const active = href === '/' ? pathname === '/' : pathname.startsWith(href);
+          return (
+            <Link key={href} href={href} aria-current={active ? 'page' : undefined}>
+              {label}
+            </Link>
+          );
+        })}
+        <div className="spacer" />
+        {me && <div className="whoami">{me.firstName}<small>{me.role.replace(/_/g, ' ').toLowerCase()}</small></div>}
+        <a href="/login" onClick={() => setToken(null)}>Sign out</a>
+      </aside>
+      <main className="content">{children}</main>
+    </div>
+  );
+}
 
 export function Shell({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
   const router = useRouter();
   const [ready, setReady] = useState(false);
 
@@ -31,30 +60,9 @@ export function Shell({ children }: { children: React.ReactNode }) {
   }, [router]);
 
   if (!ready) return null;
-
   return (
-    <div className="shell">
-      <aside className="sidebar">
-        <div className="brand">SeSha Stone<small>ADMIN</small></div>
-        {NAV.map(([href, label]) => {
-          const active = href === '/' ? pathname === '/' : pathname.startsWith(href);
-          return (
-            <Link key={href} href={href} aria-current={active ? 'page' : undefined}>
-              {label}
-            </Link>
-          );
-        })}
-        <div className="spacer" />
-        <a
-          href="/login"
-          onClick={() => {
-            setToken(null);
-          }}
-        >
-          Sign out
-        </a>
-      </aside>
-      <main className="content">{children}</main>
-    </div>
+    <SessionProvider>
+      <Nav>{children}</Nav>
+    </SessionProvider>
   );
 }
