@@ -55,7 +55,7 @@ export class RazorpayGateway implements PaymentGateway {
         order_id: order.id,
         amount: input.amount,
         currency: input.currency,
-        name: 'Se Sha Stone',
+        name: 'SeSha Stone',
         description: `Order ${input.orderNumber}`,
         prefill: { name: input.customer.name, email: input.customer.email, contact: input.customer.phone },
         ...(input.preferredMethod === 'upi' && {

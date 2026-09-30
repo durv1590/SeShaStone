@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Monogram } from '@/components/brand';
 import { ProductSummary } from '@/lib/api';
 import { formatPrice } from '@/lib/format';
 
@@ -12,7 +13,7 @@ export function ProductCard({ product }: { product: ProductSummary }) {
           // eslint-disable-next-line @next/next/no-img-element
           <img src={image.url} alt={image.alt ?? product.name} loading="lazy" />
         ) : (
-          <span>Se Sha Stone</span>
+          <Monogram size={72} />
         )}
       </div>
       <div className="card-body">

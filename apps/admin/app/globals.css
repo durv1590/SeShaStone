@@ -1,15 +1,17 @@
 :root {
-  --bg: #f6f5f3;
+  /* SeSha Stone brand palette */
+  --bg: #f8f6f1;
   --surface: #ffffff;
-  --sidebar: #221d18;
-  --sidebar-text: #d9d0c4;
-  --text: #1f1b17;
-  --muted: #736a61;
-  --accent: #8c6a2f;
-  --border: #e6e0d8;
-  --danger: #b3261e;
-  --ok: #2e7d32;
-  --radius: 8px;
+  --sidebar: #1b1b1b;
+  --sidebar-text: #d9d2c4;
+  --gold: #d4af37;
+  --text: #1b1b1b;
+  --muted: #6b645b;
+  --accent: #0e4a3a;
+  --border: #e4ddd0;
+  --danger: #722f37;
+  --ok: #0e4a3a;
+  --radius: 6px;
 }
 
 * { box-sizing: border-box; }
@@ -20,9 +22,10 @@ h2 { font-size: 1.1rem; margin: 0 0 12px; }
 
 .shell { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
 .sidebar { background: var(--sidebar); color: var(--sidebar-text); padding: 20px 12px; display: flex; flex-direction: column; gap: 2px; }
-.sidebar .brand { font-size: 1.1rem; letter-spacing: 0.1em; color: #e8c98a; padding: 0 10px 20px; }
+.sidebar .brand { font-family: var(--font-display), Georgia, serif; font-size: 1.35rem; color: var(--gold); padding: 0 10px 20px; display: grid; }
+.sidebar .brand small { font-family: system-ui, sans-serif; font-size: 0.6rem; letter-spacing: 0.4em; color: var(--sidebar-text); }
 .sidebar a { padding: 9px 10px; border-radius: 6px; }
-.sidebar a:hover, .sidebar a[aria-current='page'] { background: rgba(255, 255, 255, 0.08); color: #fff; }
+.sidebar a:hover, .sidebar a[aria-current='page'] { background: rgba(212, 175, 55, 0.12); color: var(--gold); }
 .sidebar .spacer { flex: 1; }
 .content { padding: 28px; min-width: 0; }
 
@@ -57,9 +60,9 @@ textarea { width: 100%; min-height: 120px; }
 .check { display: flex; align-items: center; gap: 6px; }
 
 .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.78rem; background: #eee8df; color: var(--text); }
-.badge.ok { background: #e3f1e4; color: var(--ok); }
+.badge.ok { background: #dcebe5; color: var(--ok); }
 .badge.warn { background: #fff1d6; color: #8a5a00; }
-.badge.bad { background: #fbe4e2; color: var(--danger); }
+.badge.bad { background: #f3e1e3; color: var(--danger); }
 
 .error { color: var(--danger); }
 .muted { color: var(--muted); }

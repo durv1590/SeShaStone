@@ -49,6 +49,11 @@ async function main() {
     create: { name: 'Necklaces', slug: 'necklaces', sortOrder: 2 },
   });
   await prisma.category.upsert({
+    where: { slug: 'premium-artificial-jewellery' },
+    update: {},
+    create: { name: 'Premium Artificial Jewellery', slug: 'premium-artificial-jewellery', sortOrder: 10 },
+  });
+  await prisma.category.upsert({
     where: { slug: 'earrings' },
     update: {},
     create: { name: 'Earrings', slug: 'earrings', sortOrder: 3 },
@@ -110,8 +115,9 @@ async function main() {
     update: {},
     create: {
       slug: 'about',
-      title: 'About Se Sha Stone',
-      content: 'Handcrafted fine jewellery with certified gemstones.',
+      title: 'About SeSha Stone',
+      content:
+        'Where every stone tells a story.\n\nSeSha Stone Pvt. Ltd. brings you premium gold, silver, diamond and artificial jewellery for every celebration — crafted for timeless elegance.',
       isPublished: true,
     },
   });

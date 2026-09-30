@@ -51,6 +51,18 @@ npm run dev:admin   # http://localhost:3001  (admin@seshastone.com / ChangeMe123
 
 Create a bucket named `seshastone-media` in the MinIO console (http://localhost:9001) with public read access so product images uploaded from the admin panel can be served.
 
+## Brand
+
+The brand board is at [`brand/seshastone-brand-reference.png`](brand/seshastone-brand-reference.png). The storefront follows it:
+
+- **Palette:** Deep Charcoal `#1B1B1B`, Champagne Gold `#D4AF37`, Warm Ivory `#F8F6F1`, Deep Emerald `#0E4A3A`, Royal Burgundy `#722F37` and Platinum Silver `#C0C0C0`. These are CSS tokens in `apps/web/app/globals.css`. Gold is only used as a text colour on dark backgrounds; on ivory a darker `--gold-ink` keeps text readable.
+- **Type:** Playfair Display for headings, Montserrat for body and buttons, Cormorant Garamond for product names and Inter for prices. They load through `next/font` (`apps/web/lib/fonts.ts`).
+- **Logo and icons:** the SS monogram and the collection and trust-bar icons are in `apps/web/components/brand.tsx`.
+- **Collections:** Gold, Silver, Diamond and Premium Artificial Jewellery are defined in `apps/web/lib/collections.ts`. Gold and Silver filter by metal, Diamond by gemstone, and Premium Artificial by the `premium-artificial-jewellery` category.
+- **Hero:** to put a photo behind the home-page hero, add a *Home hero* banner under **Admin → CMS**.
+
+The PhonePe QR code for the store's UPI ID is kept at [`public/payment/upi-qr/current-upi-qr.png`](public/payment/upi-qr/current-upi-qr.png) for reference. Checkout does not show this image. It generates its own QR for the same UPI ID with the order amount already filled in.
+
 ## Store details
 
 Company name, contact details, UPI ID and bank account are **store settings**, not code. The repository is public, so they are never committed.

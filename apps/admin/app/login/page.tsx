@@ -28,7 +28,7 @@ export default function LoginPage() {
   return (
     <div className="login">
       <form className="panel form" onSubmit={onSubmit}>
-        <h1 style={{ marginBottom: 4 }}>Se Sha Stone</h1>
+        <h1 style={{ marginBottom: 4, fontFamily: 'var(--font-display), Georgia, serif', color: 'var(--text)' }}>SeSha Stone</h1>
         <p className="muted" style={{ marginTop: 0 }}>Admin panel</p>
         <label className="field">Email<input className="input" name="email" type="email" required /></label>
         <label className="field">Password<input className="input" name="password" type="password" required /></label>

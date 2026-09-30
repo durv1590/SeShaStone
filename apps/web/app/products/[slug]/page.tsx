@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import { Monogram } from '@/components/brand';
 import { AddToCart } from '@/components/add-to-cart';
 import { api, ApiError, ProductDetail } from '@/lib/api';
 
@@ -30,7 +31,7 @@ export default async function ProductPage({ params }: { params: Params }) {
           // eslint-disable-next-line @next/next/no-img-element
           <img src={image.url} alt={image.alt ?? product.name} />
         ) : (
-          <span>Se Sha Stone</span>
+          <Monogram size={140} />
         )}
       </div>
       <div>

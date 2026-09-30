@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ProductCard } from '@/components/product-card';
 import { api, Paginated, ProductSummary } from '@/lib/api';
+import { listingTitle } from '@/lib/collections';
 
 export const metadata: Metadata = { title: 'Shop' };
 
@@ -12,7 +13,7 @@ type SearchParams = Promise<Record<string, string | undefined>>;
 export default async function ProductsPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
   const query = new URLSearchParams();
-  for (const key of ['q', 'category', 'metal', 'sort', 'page']) {
+  for (const key of ['q', 'category', 'metal', 'gemstone', 'sort', 'page']) {
     if (params[key]) query.set(key, params[key]!);
   }
   query.set('pageSize', '24');
@@ -28,9 +29,10 @@ export default async function ProductsPage({ searchParams }: { searchParams: Sea
 
   return (
     <div className="container section">
-      <h1 className="section-title">{params.category ? params.category.replace(/-/g, ' ') : 'All jewellery'}</h1>
+      <h1 className="section-title">{listingTitle(params)}</h1>
       <form className="filters" action="/products">
         {params.category && <input type="hidden" name="category" value={params.category} />}
+        {params.gemstone && <input type="hidden" name="gemstone" value={params.gemstone} />}
         <input className="input" name="q" placeholder="Search rings, ruby, 22K…" defaultValue={params.q} />
         <select name="metal" defaultValue={params.metal ?? ''}>
           <option value="">All metals</option>

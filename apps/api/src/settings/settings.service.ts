@@ -5,7 +5,7 @@ import { RedisService } from '../redis/redis.service';
 
 /** Defaults applied when a key has never been saved from the admin panel. */
 export const SETTING_DEFAULTS = {
-  'store.name': 'Se Sha Stone',
+  'store.name': 'SeSha Stone',
   'store.legalName': 'SeSha Stone Pvt. Ltd.',
   'store.website': 'www.seshastone.com',
   'store.supportEmail': '',

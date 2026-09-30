@@ -35,7 +35,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="shell">
       <aside className="sidebar">
-        <div className="brand">SE SHA STONE</div>
+        <div className="brand">SeSha Stone<small>ADMIN</small></div>
         {NAV.map(([href, label]) => {
           const active = href === '/' ? pathname === '/' : pathname.startsWith(href);
           return (

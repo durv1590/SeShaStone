@@ -17,8 +17,8 @@ async function bootstrap() {
   );
 
   const swagger = new DocumentBuilder()
-    .setTitle('Se Sha Stone API')
-    .setDescription('REST API for the Se Sha Stone jewellery storefront and admin panel')
+    .setTitle('SeSha Stone API')
+    .setDescription('REST API for the SeSha Stone jewellery storefront and admin panel')
     .setVersion('0.1.0')
     .addBearerAuth()
     .build();
