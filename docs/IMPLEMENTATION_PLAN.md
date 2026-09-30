@@ -23,7 +23,7 @@ This document maps the master brief against what the repository already contains
 4. **Money.** Integer paise everywhere, as before, so there is no floating-point arithmetic.
 5. **Emails.** A `Notification` record is written for every customer message. It is sent through SMTP only when `SMTP_*` is configured; otherwise it is recorded as `SKIPPED`, never shown as sent.
 
-## Built in this phase
+## Built (all phases complete — see git history)
 
 - **Payments:** original-QR upload and validation; evidence upload (PNG/JPEG/PDF, 5 MB, checked by content, visible only to the owner and admins); payment states `SUBMITTED` / `EXPIRED` / `PARTIALLY_REFUNDED`; a refunds module; a return-request workflow; branch and full copy buttons.
 - **Orders:** statuses `PACKED`, `OUT_FOR_DELIVERY`, `RETURN_REQUESTED` and `RETURNED`; idempotent checkout against duplicate submissions; billing address; public order tracking.
@@ -42,6 +42,9 @@ This document maps the master brief against what the repository already contains
 | Product photography, campaign and packaging artwork | Needs real photos of real pieces; the brief forbids fabricated jewellery imagery. Placeholders plus admin upload are provided. |
 | Final logo files | No approved logo was supplied. The SVG system is marked as temporary. |
 | Guest checkout, server-side cart | Needs a verified email/OTP channel to secure guest order access. Requires an email or SMS provider first. |
+| Pincode serviceability checker | Needs courier serviceability data or a courier API. |
+| Customer testimonials, social gallery | No genuine testimonials or Instagram feed supplied; omitted rather than invented. |
+| Staff two-factor authentication, nonce-based CSP | Recommended before scaling; see SECURITY.md. |
 | Background job queue (BullMQ) | Notifications are sent in-process with persisted status. A queue becomes worthwhile once a provider is live. |
 | Partially-paid state, unique-item inventory mode | Need business rules (how short payments are handled, serial-number tracking) before they can be modelled. |
 | Semantic / AI search | Architecture only (Meilisearch index already in place); not claimed as live. |

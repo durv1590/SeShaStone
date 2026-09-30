@@ -1,73 +1,94 @@
 # Architecture
 
-## Overview
-
-- **apps/web**: customer storefront. Catalogue pages are server-rendered from the API. Cart, auth and checkout run client-side, and the cart is kept in `localStorage`.
-- **apps/admin**: back-office SPA on Next.js. Only `STAFF` / `ADMIN` accounts can sign in (`POST /auth/admin/login`).
-- **apps/api**: NestJS modular monolith. All routes are under `/api/v1`, and Swagger is served at `/api/docs`.
-
-Every API route requires a JWT unless it is decorated with `@Public()`. `@Roles(...)` limits admin routes to `STAFF` and `ADMIN`.
-
-## Infrastructure modules (`apps/api/src`)
-
-| Module | Backing service | Used for |
-| --- | --- | --- |
-| `prisma` | PostgreSQL | System of record |
-| `redis` | Redis | Cache for category tree, banners, settings. Best-effort: Redis outages never fail requests |
-| `storage` | S3 / MinIO | Presigned PUT uploads from the admin panel (`POST /admin/uploads`) |
-| `search` | Meilisearch | Product full-text search and filters. Falls back to Postgres `ILIKE` when unavailable |
-| `payments` | Razorpay / Cashfree | Gateway adapters behind a common `PaymentGateway` interface |
-
-## Domain modules
-
-Customers · Addresses · Categories · Products (+ variants, images) · Inventory · Orders · Payments · Coupons · Reviews · Wishlist · CMS (pages, banners) · Marketing (newsletter, campaigns) · Settings.
-
-All money is stored as **integer paise**. Variant prices include GST. The GST component is extracted per line (`gstRate`, default 3%) for invoices.
-
-## Order, stock and payment lifecycle
+SeSha Stone is an npm-workspaces monorepo with three applications and a shared PostgreSQL database.
 
 ```
-checkout ──► Order PENDING_PAYMENT ──► stock RESERVED (reserved += qty)
-                │                               │
-                │ gateway webhook / verify      │ cancel or expiry (TTL, default 30 min)
-                ▼                               ▼
-          Order PAID ──► stock SALE      Order CANCELLED ──► stock RELEASED
-          (quantity -= qty, reserved -= qty)
-                │
-                ▼
-     PROCESSING ──► SHIPPED ──► DELIVERED
+                  Customers                                Staff
+                      │                                      │
+            apps/web (Next.js 15)                 apps/admin (Next.js 15)
+       storefront · SSR catalogue · checkout      permission-aware back office
+                      └──────────────┬───────────────────────┘
+                              REST  /api/v1  (JWT)
+                        apps/api (NestJS 11 + Prisma 6)
+      ┌──────────────┬───────────┬──────────┬────────────┬──────────────┐
+  PostgreSQL       Redis     S3 / MinIO  Meilisearch   SMTP (optional)  Razorpay / Cashfree
+ (system of      (cache,     (product &   (product      (transactional   (optional, not
+  record)         rate data)  campaign     search, DB    email)           activated)
+                              images)      fallback)
 ```
 
-- Stock is reserved with a conditional `UPDATE … WHERE quantity - reserved >= qty`, so concurrent checkouts cannot oversell a single piece.
-- Coupon usage limits use the same conditional-update pattern. Cancelling an order frees its coupon redemption.
-- Payment events are applied idempotently (a replayed webhook is a no-op). Webhook signatures are verified with HMAC-SHA256 over the raw body.
-- Direct UPI (`UPI_DIRECT`) and bank transfer (`BANK_TRANSFER`) orders stay `PENDING_PAYMENT` with a pending `Payment` row. The customer gets instructions from `GET /me/orders/:id/payment-instructions` and reports a UTR with `POST /me/orders/:id/payment-reference`. Staff then call `POST /admin/payments/:id/confirm`, which runs the same `markPaid` path as a gateway capture, or `…/reject`. These orders are held for `checkout.manualPaymentHoldHours` (default 48). Once a UTR has been submitted they are not auto-expired.
-- Cancelling an order marks its open payments `FAILED`.
-- Cash-on-delivery orders go straight to `PROCESSING`. Their stock is sold at checkout and their payment is captured on delivery.
-- Admin status changes follow an explicit transition table (`orders.service.ts`). Cancelling a paid order returns its stock to inventory.
-- Every stock change writes an `InventoryMovement` row (RESTOCK, ADJUSTMENT, RESERVE, RELEASE, SALE, RETURN).
+The admin panel is a separate app (not `web/app/admin`), so back-office code and routes never ship to shoppers.
 
-## API map (abridged)
+## API modules (`apps/api/src`)
 
-| Area | Public / customer | Admin |
-| --- | --- | --- |
-| Auth | `POST /auth/register`, `POST /auth/login`, `GET /auth/me` | `POST /auth/admin/login` |
-| Catalogue | `GET /categories`, `GET /products`, `GET /products/:slug` | `/admin/categories`, `/admin/products`, `/admin/variants/:id`, `POST /admin/products/reindex` |
-| Account | `/me/profile`, `/me/addresses`, `/me/wishlist`, `/me/orders` | `/admin/customers` |
-| Checkout | `POST /checkout/quote`, `POST /checkout`, `POST /coupons/validate` | `/admin/orders`, `PATCH /admin/orders/:id/status`, `GET /admin/dashboard` |
-| Payments | `POST /payments/initiate`, `POST /payments/verify`, `POST /payments/webhooks/:provider`, `GET /me/orders/:id/payment-instructions`, `POST /me/orders/:id/payment-reference` | `GET /admin/payments`, `POST /admin/payments/:id/confirm`, `POST /admin/payments/:id/reject` |
-| Inventory | — | `GET /admin/inventory`, `POST /admin/inventory/:variantId/adjust` |
-| Coupons | — | `/admin/coupons` |
-| Reviews | `GET /products/:id/reviews`, `POST /reviews` (verified purchasers only) | `/admin/reviews` (moderation) |
-| CMS | `GET /pages/:slug`, `GET /banners` | `/admin/pages`, `/admin/banners` |
-| Marketing | `POST /newsletter/subscribe`, `POST /newsletter/unsubscribe` | `/admin/marketing/subscribers`, `/admin/marketing/campaigns` |
-| Settings | `GET /settings` (public keys only) | `GET/PUT /admin/settings` |
-| Media | — | `POST /admin/uploads` |
+| Area | Modules |
+| --- | --- |
+| Infrastructure | `prisma`, `redis` (best-effort cache), `storage` (S3 presigned uploads), `search` (Meilisearch), `notifications` (SMTP or recorded as SKIPPED), `audit` (append-only log) |
+| Identity | `auth` (JWT, password reset, admin login), `users` (staff and roles), `customers`, `addresses` |
+| Catalogue | `products` (lines, attributes, variants, images, related, bestsellers), `categories`, `collections`, `inventory`, `reviews`, `wishlist` |
+| Commerce | `orders` (quote, checkout, lifecycle, returns, tracking, dashboard), `payments` (gateways, manual UPI/bank, evidence, refunds), `coupons` |
+| Content | `cms` (pages, campaign banners), `marketing` (newsletter, email campaigns), `settings` (business configuration and the UPI QR asset) |
 
-## Not yet implemented
+Cross-cutting guards, applied globally:
 
-- Sending campaign and transactional emails or SMS. Campaigns are stored and scheduled, but nothing delivers them yet.
-- Automatic matching of UPI / bank transfers. Staff confirm each UTR by hand against the statement.
-- Gateway refunds. Marking an order `REFUNDED` only changes its status; the money must be refunded in the gateway dashboard.
-- Shipping-partner integrations (Shiprocket, Delhivery). Tracking numbers are entered by hand.
-- Live gold-rate pricing. Variant prices are set manually.
+- **`ThrottlerGuard`:** 120 requests per minute per IP by default. Auth, checkout, tracking and payment submission have stricter limits.
+- **`JwtAuthGuard`:** every route needs a token unless it is marked `@Public()`.
+- **`RolesGuard`:** checks `@RequirePermissions()` against the role → permission map in `common/auth/permissions.ts`.
+
+## Storefront (`apps/web`)
+
+- Server components render catalogue pages from the API.
+- Interactive pieces are client components: cart, checkout, account, payment step, gallery, mega menu, drawer and search.
+- The cart lives in `localStorage` and is re-priced by the server at quote and at checkout.
+- The design system lives in `app/globals.css` (tokens) plus `components/` (`BrandLogo`, `BrandMark`, `LuxuryHeading`, `ProductCard`, `ProductListing`, `CampaignBanner`, `TrustBar`, `OrderPayment`, …).
+
+## Key flows
+
+### Order, stock and payment lifecycle
+
+```
+checkout ─► PENDING_PAYMENT  (stock RESERVED; payment PENDING)
+   │  customer submits UTR / proof ─► payment SUBMITTED  (still unpaid)
+   │  staff verifies against the bank statement ─► payment CAPTURED, order PAID (stock SOLD)
+   │  staff rejects ─► payment back to PENDING with a reason shown to the customer
+   │  hold expires (48 h manual / 30 min gateway, configurable) ─► CANCELLED, payment EXPIRED, stock RELEASED
+   ▼
+PAID ─► PROCESSING ─► PACKED ─► SHIPPED ─► OUT_FOR_DELIVERY ─► DELIVERED
+                                                   │ customer requests return within the window
+                                                   ▼
+                                           RETURN_REQUESTED ─► RETURNED (restocked) | back to DELIVERED
+refunds (any paid order) ─► payment PARTIALLY_REFUNDED / REFUNDED ─► order REFUNDED when fully refunded
+```
+
+- The transition table in `orders/order-lifecycle.ts` is the single source of truth.
+- Staff can never set PAID or REFUNDED directly.
+- Stock is reserved with a conditional `UPDATE … WHERE quantity - reserved >= qty`, so a single piece can't be oversold.
+- Checkout is idempotent per `idempotencyKey`.
+- Orders with a submitted UTR are never auto-expired.
+
+### UPI QR
+
+The original QR image is uploaded in Admin → Settings and stored in the database (`BusinessAsset`), not in a public folder. On upload the server:
+
+- sniffs the file type from its bytes;
+- decodes the QR;
+- requires a `upi://pay` URI whose `pa` matches the configured UPI ID;
+- records a SHA-256 fingerprint and an audit entry.
+
+Customers receive the image only inside their own order's payment instructions. Generating an amount-prefilled UPI link is opt-in.
+
+## Caching
+
+- Redis caches settings (5 min), the category tree (10 min), active collections (5 min) and banners (2 min). Every admin write invalidates the affected key.
+- If Redis is unavailable, reads fall through to the database.
+- The storefront fetches settings with a 60-second revalidation.
+
+## Deferred / future work
+
+See [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md#deferred-and-why): guest checkout, a server-side cart, a background job queue, unique-item inventory, semantic/AI search, WhatsApp notifications and analytics providers.
+
+The code is structured for these without claiming they are live:
+
+- search goes through `SearchService`;
+- notifications go through `NotificationsService`;
+- payments go through the `PaymentGateway` interface.

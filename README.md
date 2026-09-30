@@ -1,100 +1,100 @@
-# Se Sha Stone
+# SeSha Stone
 
-E-commerce platform for the Se Sha Stone jewellery brand: a customer storefront, an admin panel, and a REST API.
+**SeSha Stone Pvt. Ltd.** — premium jewellery e-commerce · *Timeless Elegance* · www.seshastone.com
 
-```
-                         SE SHA STONE
-              ┌──────────────┴──────────────┐
-         CUSTOMER WEB                  ADMIN PANEL
-        apps/web (Next.js)          apps/admin (Next.js)
-              └──────────────┬──────────────┘
-                        REST /api/v1
-                   apps/api (NestJS + Prisma)
-       ┌─────────────┬───────┼────────┬─────────────┐
-   PostgreSQL      Redis   Storage   Search      Payments
-                            S3/MinIO  Meilisearch  Razorpay · Cashfree · UPI
-```
+A complete online jewellery store: a luxury storefront, a permission-based admin panel and a REST API, with UPI QR and bank-transfer payments that are verified by staff before an order is confirmed.
 
-| App | Path | Port | Stack |
+| App | Path | Local URL | Stack |
 | --- | --- | --- | --- |
-| API | `apps/api` | 4000 | NestJS 11, Prisma 6, PostgreSQL, Redis, S3, Meilisearch |
-| Storefront | `apps/web` | 3000 | Next.js 15 (App Router), React 19, TypeScript |
-| Admin panel | `apps/admin` | 3001 | Next.js 15 (App Router), React 19, TypeScript |
+| Storefront | `apps/web` | http://localhost:3000 | Next.js 15 (App Router), React 19, TypeScript |
+| Admin panel | `apps/admin` | http://localhost:3001 | Next.js 15, React 19, TypeScript |
+| API | `apps/api` | http://localhost:4000/api/v1 · docs at `/api/docs` | NestJS 11, Prisma 6, PostgreSQL, Redis, S3, Meilisearch |
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the domain model, order/stock/payment lifecycle and API map.
+## Features
 
-## Getting started
+- **Catalogue:** Gold, Silver, Diamond and Premium Artificial jewellery lines.
+  - Artificial pieces are always clearly labelled.
+  - Line-specific attributes are shown only when verified.
+  - Collections can be hand-picked or automatic (new arrivals, bestsellers).
+  - SEO URLs such as `/gold/rings` and `/product/<slug>`.
+  - Search and filters.
+- **Shopping:**
+  - A bag re-priced by the server at quote and checkout.
+  - A distraction-free checkout with delivery and billing addresses.
+  - Duplicate-submit protection.
+  - Wishlist, account pages, returns and public order tracking.
+- **Payments:** see [docs/PAYMENT_SETUP.md](docs/PAYMENT_SETUP.md).
+  - UPI with the original, server-verified QR.
+  - SBI bank transfer.
+  - UTR and proof upload.
+  - Staff verify or reject, and record refunds.
+  - A gateway abstraction (Razorpay / Cashfree) that stays off until configured.
+- **Admin:**
+  - Role-based access: Super Admin, Admin, Order / Product / Marketing Manager, Support.
+  - Dashboard, orders and fulfilment, payments, refunds, products, inventory, collections, campaigns and banners, CMS, coupons, reviews, customers and marketing.
+  - Business and payment settings with masking, confirmation and change history.
+  - Staff management and an audit log.
+- **Brand:** design tokens, Cormorant Garamond + Montserrat, an SS monogram logo system, favicons and app icons.
+  - Logo artwork is a **temporary placeholder** until approved files are supplied; see [docs/BRAND_GUIDELINES.md](docs/BRAND_GUIDELINES.md).
+- **Quality:**
+  - ESLint, TypeScript and unit tests.
+  - A Playwright API, journey, responsive (9 widths) and axe accessibility suite.
+  - Security headers, rate limiting and an audit trail.
+
+## Quick start
 
 Requirements: Node.js 20+, Docker.
 
 ```bash
-# 1. Infrastructure: Postgres, Redis, MinIO (S3), Meilisearch
-docker compose up -d
+docker compose up -d                       # Postgres, Redis, MinIO (S3), Meilisearch
+npm install                                # all workspaces; generates the Prisma client
 
-# 2. Install all workspaces (also generates the Prisma client)
-npm install
-
-# 3. Configure environments
-cp apps/api/.env.example apps/api/.env
+cp apps/api/.env.example apps/api/.env     # fill in SEED_* business, bank and UPI values (never committed)
 cp apps/web/.env.example apps/web/.env.local
 cp apps/admin/.env.example apps/admin/.env.local
 
-# 4. Create the schema and seed an admin user + sample catalogue
 npm run db:migrate
-npm run db:seed
+npm run db:seed                            # Super Admin, categories, collections, draft policies, verified UPI QR
 
-# 5. Run (three terminals)
-npm run dev:api     # http://localhost:4000/api/v1  · Swagger at /api/docs
-npm run dev:web     # http://localhost:3000
-npm run dev:admin   # http://localhost:3001  (admin@seshastone.com / ChangeMe123!)
+npm run dev:api     # :4000
+npm run dev:web     # :3000
+npm run dev:admin   # :3001 — admin@seshastone.com / ChangeMe123! (change immediately)
 ```
 
-Create a bucket named `seshastone-media` in the MinIO console (http://localhost:9001) with public read access so product images uploaded from the admin panel can be served.
+For local demo products, set `SEED_DEMO_PRODUCTS=true` before seeding. Create a public-read `seshastone-media` bucket in MinIO (http://localhost:9001) for image uploads.
 
-## Brand
+## Business, bank and UPI details
 
-The brand board is at [`brand/seshastone-brand-reference.png`](brand/seshastone-brand-reference.png). The storefront follows it:
+These are **database settings**, edited in Admin → Settings. They are never in code or git; this repository is public.
 
-- **Palette:** Deep Charcoal `#1B1B1B`, Champagne Gold `#D4AF37`, Warm Ivory `#F8F6F1`, Deep Emerald `#0E4A3A`, Royal Burgundy `#722F37` and Platinum Silver `#C0C0C0`. These are CSS tokens in `apps/web/app/globals.css`. Gold is only used as a text colour on dark backgrounds; on ivory a darker `--gold-ink` keeps text readable.
-- **Type:** Playfair Display for headings, Montserrat for body and buttons, Cormorant Garamond for product names and Inter for prices. They load through `next/font` (`apps/web/lib/fonts.ts`).
-- **Logo and icons:** the SS monogram and the collection and trust-bar icons are in `apps/web/components/brand.tsx`.
-- **Collections:** Gold, Silver, Diamond and Premium Artificial Jewellery are defined in `apps/web/lib/collections.ts`. Gold and Silver filter by metal, Diamond by gemstone, and Premium Artificial by the `premium-artificial-jewellery` category.
-- **Hero:** to put a photo behind the home-page hero, add a *Home hero* banner under **Admin → CMS**.
+- Customers see bank and UPI details only on their own order's payment page.
+- The original UPI QR is kept unmodified at `public/payment/upi-qr/current-upi-qr.png` and imported by the seed.
+- In production, upload or replace the QR in Admin → Settings → UPI QR code. It is accepted only if it pays the configured UPI ID.
 
-The store's original PhonePe QR code is kept, unmodified, at [`public/payment/upi-qr/current-upi-qr.png`](public/payment/upi-qr/current-upi-qr.png). It encodes the same UPI ID as the one set in **Admin → Settings**. If you replace it, check that the new QR's encoded UPI ID still matches that setting.
-
-## Store details
-
-Company name, contact details, UPI ID and bank account are **store settings**, not code. The repository is public, so they are never committed.
-
-- Put them in the `SEED_STORE_*`, `SEED_UPI_*` and `SEED_BANK_*` variables in `apps/api/.env` (gitignored). `npm run db:seed` then writes them to the database and creates the Contact page.
-- After that, edit them any time under **Admin → Settings**. Re-running the seed never overwrites values edited in the admin panel.
-
-Customers only see the UPI ID and bank details on their own unpaid orders. They are not exposed through the public `/settings` endpoint.
-
-## Payments
-
-Enable methods under **Admin → Settings → Payment methods**.
-
-- **UPI to the store's UPI ID** (on by default). The order page shows a QR code and an "Open UPI app" link with the amount filled in. The customer then submits the UTR / transaction ID.
-- **Bank transfer (NEFT / IMPS)** (on by default). The order page shows the account details, with the order number to use as remarks. The customer submits the UTR.
-- Admin checks the bank or UPI statement and clicks **Confirm** (or **Reject** for a wrong UTR) under **Payments**. The dashboard shows how many are waiting. Unpaid UPI / bank orders hold stock for 48 hours (configurable). Orders with a submitted UTR are never auto-cancelled.
-
-The gateways below need keys in `apps/api/.env`:
-
-- **Razorpay**: `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`. Webhook URL: `https://<api-host>/api/v1/payments/webhooks/razorpay` (events `payment.captured`, `payment.failed`, `order.paid`).
-- **Cashfree**: `CASHFREE_APP_ID`, `CASHFREE_SECRET_KEY`, `CASHFREE_ENV`. Webhook URL: `https://<api-host>/api/v1/payments/webhooks/cashfree`.
-- **UPI** goes through `PAYMENT_DEFAULT_PROVIDER` with UPI pre-selected in the gateway checkout.
-- **Cash on delivery** is toggled in Settings. The payment is marked captured when the order is marked delivered.
-
-Webhooks are the source of truth. The storefront's post-checkout verify call only speeds up confirmation.
+See [docs/BUSINESS_SETTINGS_GUIDE.md](docs/BUSINESS_SETTINGS_GUIDE.md).
 
 ## Scripts
 
-| Command | What it does |
+| Command | Purpose |
 | --- | --- |
-| `npm run build` | Builds all three apps |
-| `npm run typecheck` | Type-checks all three apps |
-| `npm test -w @seshastone/api` | API unit tests |
-| `npm run db:migrate` | Applies/creates Prisma migrations (dev) |
-| `npm run db:seed` | Seeds admin user, categories, a sample product, and an About page |
+| `npm run lint` / `npm run typecheck` / `npm test` / `npm run build` | Lint, types, unit tests, production builds |
+| `npm run test:e2e` | Playwright end-to-end suite (stack must be running) |
+| `npm run db:migrate` / `npm run db:seed` | Prisma migrations / idempotent seed |
+| `npm run brand:generate` | Regenerate logo SVGs, favicons and icons from the brand fonts |
+
+## Documentation
+
+| Document | |
+| --- | --- |
+| [ARCHITECTURE](docs/ARCHITECTURE.md) | System design, modules, order / stock / payment lifecycle |
+| [DATABASE](docs/DATABASE.md) | Data model, conventions, migrations, backups |
+| [API](docs/API.md) | Endpoints and permissions |
+| [PAYMENT_SETUP](docs/PAYMENT_SETUP.md) | UPI, bank transfer, verification, refunds, gateways |
+| [ADMIN_GUIDE](docs/ADMIN_GUIDE.md) | Roles and everyday admin tasks |
+| [BUSINESS_SETTINGS_GUIDE](docs/BUSINESS_SETTINGS_GUIDE.md) | Every setting, who can edit it, privacy rules |
+| [BRAND_GUIDELINES](docs/BRAND_GUIDELINES.md) | Colour, type, logo system, photography, campaigns |
+| [DEPLOYMENT](docs/DEPLOYMENT.md) | Hosting, DNS/SSL, environment, safe updates, backups, monitoring |
+| [SECURITY](docs/SECURITY.md) | Controls, operational rules, known limitations |
+| [TESTING](docs/TESTING.md) | Test commands and suites |
+| [GO_LIVE_CHECKLIST](docs/GO_LIVE_CHECKLIST.md) | Everything to confirm before launch |
+| [IMPLEMENTATION_PLAN](docs/IMPLEMENTATION_PLAN.md) | Repository audit, decisions, and what is deferred and why |
