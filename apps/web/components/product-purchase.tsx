@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import type { ProductDetail } from '@/lib/api';
@@ -83,7 +84,7 @@ export function ProductPurchase({ product }: { product: ProductDetail }) {
         </button>
         <WishlistButton productId={product.id} name={product.name} />
       </div>
-      {added && <p className="notice notice--success" role="status" style={{ margin: 0 }}>Added to your bag. <a className="link" href="/cart">View bag</a></p>}
+      {added && <p className="notice notice--success" role="status" style={{ margin: 0 }}>Added to your bag. <Link className="link" href="/cart">View bag</Link></p>}
     </div>
   );
 }

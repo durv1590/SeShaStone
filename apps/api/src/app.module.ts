@@ -33,7 +33,11 @@ import { CollectionsModule } from './collections/collections.module';
   imports: [
     ConfigModule.forRoot({ isGlobal: true, load: [configuration] }),
     // Default: 120 requests per minute per IP; sensitive endpoints set stricter limits.
-    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]),
+    ThrottlerModule.forRoot({
+      throttlers: [{ ttl: 60_000, limit: 120 }],
+      // Automated test runs only; never honoured in production.
+      skipIf: () => process.env.E2E_DISABLE_RATE_LIMIT === 'true' && process.env.NODE_ENV !== 'production',
+    }),
     // Infrastructure
     PrismaModule,
     RedisModule,

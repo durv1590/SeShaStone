@@ -207,7 +207,7 @@ p { margin: 0 0 1em; }
 .collection-hero--burgundy { background: var(--ss-burgundy); color: var(--ss-ivory); }
 .collection-hero--charcoal .eyebrow, .collection-hero--emerald .eyebrow, .collection-hero--burgundy .eyebrow { color: var(--ss-champagne); }
 .collection-hero h1 { font-size: var(--text-display-lg); }
-.collection-hero p { max-width: 60ch; margin: 14px auto 0; opacity: 0.85; }
+.collection-hero p:not(.eyebrow) { max-width: 60ch; margin: 14px auto 0; opacity: 0.85; }
 .collection-hero .chips { justify-content: center; margin-top: 24px; }
 .collection-hero--image { position: relative; color: var(--ss-ivory); background: var(--ss-black); }
 .collection-hero--image img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.55; }

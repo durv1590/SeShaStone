@@ -16,13 +16,17 @@
     "db:down": "docker compose down",
     "db:migrate": "npm run prisma:migrate -w @seshastone/api",
     "db:seed": "npm run prisma:seed -w @seshastone/api",
-    "brand:generate": "node scripts/brand/generate.mjs"
+    "brand:generate": "node scripts/brand/generate.mjs",
+    "test": "npm test -w @seshastone/api",
+    "test:e2e": "playwright test -c e2e/playwright.config.ts"
   },
   "engines": {
     "node": ">=20"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@playwright/test": "^1.63.0",
-    "opentype.js": "^1.3.4"
+    "opentype.js": "^1.3.4",
+    "qrcode": "^1.5.4"
   }
 }

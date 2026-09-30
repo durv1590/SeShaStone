@@ -38,7 +38,7 @@ export function parseUpiUri(uri: string): UpiPayload | null {
   if (!/^upi:\/\/pay\?/i.test(uri)) return null;
   const params = new URLSearchParams(uri.slice(uri.indexOf('?') + 1));
   const upiId = params.get('pa')?.trim();
-  if (!upiId || !/^[\w.\-]{2,256}@[a-zA-Z][\w.\-]{1,64}$/.test(upiId)) return null;
+  if (!upiId || !/^[\w.-]{2,256}@[a-zA-Z][\w.-]{1,64}$/.test(upiId)) return null;
   const payeeName = params.get('pn')?.replace(/\s+/g, ' ').trim() || null;
   return { uri, upiId, payeeName, merchantCode: params.get('mc') };
 }

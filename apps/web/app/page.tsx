@@ -43,7 +43,6 @@ export default async function HomePage() {
             <picture>
               {hero.mobileImageUrl && <source media="(max-width: 767px)" srcSet={hero.mobileImageUrl} />}
               {hero.tabletImageUrl && <source media="(max-width: 1279px)" srcSet={hero.tabletImageUrl} />}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={hero.imageUrl} alt="" fetchPriority="high" />
             </picture>
           </div>

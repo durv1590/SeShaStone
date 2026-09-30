@@ -11,7 +11,6 @@ export function CampaignBanner({ banner, eager = false }: { banner: Banner; eage
       <picture>
         {banner.mobileImageUrl && <source media="(max-width: 767px)" srcSet={banner.mobileImageUrl} />}
         {banner.tabletImageUrl && <source media="(max-width: 1279px)" srcSet={banner.tabletImageUrl} />}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={banner.imageUrl} alt="" loading={eager ? 'eager' : 'lazy'} decoding="async" />
       </picture>
       <div className="campaign__copy">
