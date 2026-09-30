@@ -5,7 +5,7 @@ import { RequirePermissions } from '../common/decorators/permissions.decorator';
 import { StorageService } from './storage.service';
 
 class CreateUploadDto {
-  @IsIn(['products', 'categories', 'banners', 'cms', 'certificates'])
+  @IsIn(['products', 'categories', 'collections', 'banners', 'cms', 'certificates'])
   folder: string;
 
   @IsString()

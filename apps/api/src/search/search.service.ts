@@ -8,6 +8,7 @@ export interface ProductSearchDocument {
   slug: string;
   description?: string | null;
   category?: string | null;
+  line?: string | null;
   metal?: string | null;
   purity?: string | null;
   gemstone?: string | null;
@@ -38,7 +39,7 @@ export class SearchService implements OnModuleInit {
     try {
       await this.client.index(PRODUCTS_INDEX).updateSettings({
         searchableAttributes: ['name', 'tags', 'gemstone', 'category', 'metal', 'description'],
-        filterableAttributes: ['category', 'metal', 'purity', 'gemstone', 'minPrice'],
+        filterableAttributes: ['category', 'line', 'metal', 'purity', 'gemstone', 'minPrice'],
         sortableAttributes: ['minPrice'],
       });
     } catch (err) {

@@ -27,6 +27,7 @@ import { SettingsModule } from './settings/settings.module';
 import { AuditModule } from './audit/audit.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { UsersModule } from './users/users.module';
+import { CollectionsModule } from './collections/collections.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { UsersModule } from './users/users.module';
     CustomersModule,
     AddressesModule,
     CategoriesModule,
+    CollectionsModule,
     ProductsModule,
     InventoryModule,
     CouponsModule,

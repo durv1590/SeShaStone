@@ -1,5 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { Actor, CurrentActor } from '../common/decorators/actor.decorator';
 import { Public } from '../common/decorators/public.decorator';
 import { RequirePermissions } from '../common/decorators/permissions.decorator';
 import {
@@ -21,6 +22,12 @@ export class ProductsController {
   @Get('products')
   list(@Query() query: ListProductsDto) {
     return this.products.list(query);
+  }
+
+  @Public()
+  @Get('products/:slug/related')
+  related(@Param('slug') slug: string) {
+    return this.products.related(slug);
   }
 
   @Public()
@@ -53,22 +60,22 @@ export class ProductsController {
   @ApiBearerAuth()
   @RequirePermissions('products.manage')
   @Post('admin/products')
-  create(@Body() dto: CreateProductDto) {
-    return this.products.create(dto);
+  create(@CurrentActor() actor: Actor, @Body() dto: CreateProductDto) {
+    return this.products.create(actor, dto);
   }
 
   @ApiBearerAuth()
   @RequirePermissions('products.manage')
   @Patch('admin/products/:id')
-  update(@Param('id') id: string, @Body() dto: UpdateProductDto) {
-    return this.products.update(id, dto);
+  update(@CurrentActor() actor: Actor, @Param('id') id: string, @Body() dto: UpdateProductDto) {
+    return this.products.update(actor, id, dto);
   }
 
   @ApiBearerAuth()
   @RequirePermissions('products.manage')
   @Delete('admin/products/:id')
-  remove(@Param('id') id: string) {
-    return this.products.remove(id);
+  remove(@CurrentActor() actor: Actor, @Param('id') id: string) {
+    return this.products.remove(actor, id);
   }
 
   @ApiBearerAuth()
