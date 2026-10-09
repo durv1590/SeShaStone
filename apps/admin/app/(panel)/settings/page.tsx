@@ -22,6 +22,14 @@ interface QrInfo {
   sha256?: string;
 }
 
+interface EmailStatus {
+  configured: boolean;
+  host: string | null;
+  from: string | null;
+  connection: { ok: boolean; checkedAt: string; error: string | null } | null;
+  warnings: string[];
+}
+
 interface AuditRow {
   id: string;
   action: string;
@@ -48,6 +56,8 @@ export default function SettingsPage() {
   const [data, setData] = useState<AdminSettings | null>(null);
   const [qr, setQr] = useState<QrInfo | null>(null);
   const [history, setHistory] = useState<AuditRow[]>([]);
+  const [email, setEmail] = useState<EmailStatus | null>(null);
+  const [testTo, setTestTo] = useState('');
   const [status, setStatus] = useState<Record<string, { ok: boolean; text: string }>>({});
   const [revealed, setRevealed] = useState<string | null>(null);
   const [preview, setPreview] = useState(false);
@@ -57,14 +67,16 @@ export default function SettingsPage() {
   const canPayment = can('settings.payment.edit');
 
   const load = useCallback(async () => {
-    const [s, q, h] = await Promise.all([
+    const [s, q, h, e] = await Promise.all([
       api<AdminSettings>('/admin/settings'),
       api<QrInfo>('/admin/settings/upi-qr'),
       api<Paginated<AuditRow>>('/admin/settings/history'),
+      api<EmailStatus>('/admin/settings/email'),
     ]);
     setData(s);
     setQr(q);
     setHistory(h.items);
+    setEmail(e);
   }, []);
   useEffect(() => { void load(); }, [load]);
 
@@ -125,6 +137,27 @@ export default function SettingsPage() {
   const v = data.values;
   const str = (k: string) => String(v[k] ?? '');
   const enabled = (v['payments.enabledProviders'] as string[]) ?? [];
+  async function checkEmail() {
+    setStatus((st) => ({ ...st, email: { ok: true, text: 'Checking…' } }));
+    const e = await api<EmailStatus>('/admin/settings/email?check=true');
+    setEmail(e);
+    setStatus((st) => ({ ...st, email: e.connection?.ok ? { ok: true, text: 'Connected' } : { ok: false, text: e.connection?.error ?? 'Not configured' } }));
+  }
+
+  async function sendTestEmail() {
+    setStatus((st) => ({ ...st, email: { ok: true, text: 'Sending…' } }));
+    try {
+      const r = await api<{ ok: boolean; error: string | null; to: string }>('/admin/settings/email/test', {
+        method: 'POST',
+        body: JSON.stringify(testTo.trim() ? { to: testTo.trim() } : {}),
+      });
+      setStatus((st) => ({ ...st, email: r.ok ? { ok: true, text: `Test email sent to ${r.to}. Check the inbox (and spam folder).` } : { ok: false, text: `Not sent: ${r.error}` } }));
+      setEmail(await api<EmailStatus>('/admin/settings/email'));
+    } catch (err) {
+      setStatus((st) => ({ ...st, email: { ok: false, text: (err as Error).message } }));
+    }
+  }
+
   const Msg = ({ id }: { id: string }) =>
     status[id] ? <span className={status[id].ok ? 'muted' : 'error'} role="status">{status[id].text}</span> : null;
   const Updated = ({ k }: { k: string }) =>
@@ -357,6 +390,37 @@ export default function SettingsPage() {
             <Msg id="qr" />
           </div>
         )}
+      </section>
+
+      {/* ── Email ───────────────────────────────────────── */}
+      <section className="panel" aria-labelledby="email">
+        <h2 id="email">Email</h2>
+        <p className="muted">Order, payment, shipping and refund emails. The provider and its password are server environment variables (<code>SMTP_*</code>); see the Deployment guide.</p>
+        {email && (
+          <dl className="kv">
+            <dt>Status</dt>
+            <dd>
+              {!email.configured ? <span className="badge warn">Not configured — emails are recorded as skipped</span>
+                : email.connection?.ok ? <span className="badge ok">Connected</span>
+                : email.connection ? <span className="badge bad">Login failed</span>
+                : <span className="badge">Not checked yet</span>}
+            </dd>
+            <dt>Server</dt><dd>{email.host ?? '—'}</dd>
+            <dt>Sends as</dt><dd>{email.from ?? '—'}</dd>
+            {email.connection && <><dt>Last checked</dt><dd>{formatDate(email.connection.checkedAt)}{email.connection.error && <span className="error"> · {email.connection.error}</span>}</dd></>}
+          </dl>
+        )}
+        {email?.warnings.map((w) => <p key={w} className="notice">{w}</p>)}
+        <div className="toolbar">
+          <button type="button" className="btn btn-ghost" onClick={checkEmail}>Check connection</button>
+          {canBusiness && (
+            <>
+              <input className="input" type="email" placeholder="Recipient (default: you)" value={testTo} onChange={(e) => setTestTo(e.target.value)} aria-label="Test email recipient" style={{ maxWidth: 280 }} />
+              <button type="button" className="btn" onClick={sendTestEmail}>Send test email</button>
+            </>
+          )}
+          <Msg id="email" />
+        </div>
       </section>
 
       {/* ── Change history ───────────────────────────────── */}

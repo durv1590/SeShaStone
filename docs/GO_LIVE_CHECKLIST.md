@@ -33,7 +33,7 @@
 - [ ] `NODE_ENV=production`; strong `JWT_SECRET`; `CORS_ORIGINS` set to the production origins only.
 - [ ] Migrations applied with `prisma migrate deploy`; seed run once.
 - [ ] Seeded admin password changed; staff accounts created with least-privilege roles; the admin domain restricted.
-- [ ] SMTP configured and a test email received. Otherwise, accept that notifications are SKIPPED.
+- [ ] Gmail app password created and `SMTP_*` set on the server (DEPLOYMENT.md → Email); Admin → Settings → Email shows **Connected** and a test email arrived.
 - [ ] HTTPS everywhere; HSTS; Cloudflare WAF and bot protection on.
 - [ ] Backups (PITR and nightly dumps) enabled; a restore drill done.
 - [ ] Uptime monitor on `/api/v1/health`; error tracking connected.

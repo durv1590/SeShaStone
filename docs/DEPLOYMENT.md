@@ -11,7 +11,7 @@
 | Redis | Managed (Upstash, ElastiCache) | Cache only; safe to lose |
 | Object storage | AWS S3 / Cloudflare R2 + CDN | Public-read bucket for product and campaign images only |
 | Search | Meilisearch Cloud (optional) | The catalogue falls back to database search |
-| Email | SES, Postmark, Zoho or Gmail SMTP | `SMTP_*`; otherwise emails are recorded as SKIPPED |
+| Email | Gmail SMTP with an app password (see **Email** below); SES, Brevo or Zoho later | `SMTP_*`; otherwise emails are recorded as SKIPPED |
 | DNS / SSL / WAF | Cloudflare | Full (strict) TLS, HSTS, bot protection |
 
 ## Environment variables
@@ -24,6 +24,34 @@ Examples: `apps/api/.env.example`, `apps/web/.env.example`, `apps/admin/.env.exa
 - Set `CORS_ORIGINS` to the exact web and admin origins.
 - Set `WEB_URL` to the storefront URL.
 - Never set `E2E_DISABLE_RATE_LIMIT` in production (it is ignored there anyway).
+
+## Email (Gmail)
+
+The store sends order, payment, shipping and refund emails through Gmail's SMTP server, using a Google **app password**. An app password is a separate 16-character password that only lets the store send mail; it is not your Gmail password, and you can revoke it at any time.
+
+1. Sign in to the Gmail account the store will send from.
+2. Turn on **2-Step Verification** at https://myaccount.google.com/security (Google only offers app passwords when it is on).
+3. Open https://myaccount.google.com/apppasswords, enter a name such as "SeSha Stone store", and choose **Create**. Copy the 16-character password Google shows. You will not be able to see it again.
+4. On the API server, set these environment variables (in `apps/api/.env` or your host's secret settings), then restart the API:
+
+   ```
+   SMTP_HOST=smtp.gmail.com
+   SMTP_PORT=465
+   SMTP_SECURE=true
+   SMTP_USER=<the Gmail address>
+   SMTP_PASS=<the 16-character app password, without spaces>
+   SMTP_FROM="SeSha Stone <the same Gmail address>"
+   ```
+
+5. Check the API log for `Email ready: sending through smtp.gmail.com`. If it says `Email login failed`, the address or app password is wrong.
+6. In **Admin → Settings → Email**, choose **Send test email** and confirm it arrives (check the spam folder the first time).
+
+Good to know:
+
+- `SMTP_FROM` must be the same Gmail address as `SMTP_USER`. Gmail replaces any other sender address with the account's own, and the admin Email panel warns if they differ.
+- Gmail allows about 500 emails a day from a personal account, which is enough for a new store. Moving to a provider that sends from `@seshastone.com` (such as Brevo, Zoho or Amazon SES) later only means changing these variables.
+- Changing your Google password revokes app passwords, so create a new one and update `SMTP_PASS` if that happens.
+- The app password is a secret: never commit it to git or paste it into chat or email.
 
 ## First deployment
 
