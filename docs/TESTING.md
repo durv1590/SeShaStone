@@ -36,6 +36,15 @@
 
 Tests create their own products and customers (prefixed `e2e`/`E2E`), so they never depend on demo data. Run them against a staging database, not production.
 
+## Continuous integration
+
+`.github/workflows/ci.yml` runs on every pull request and on pushes to `main`:
+
+- **checks:** lint, typecheck, unit tests and production builds.
+- **e2e:** starts Postgres and Redis, migrates and seeds a fresh database, builds and starts the API, storefront and admin, then runs the Playwright suite. Server logs and Playwright traces are kept when it fails.
+
+The e2e job uses test-only `SEED_*` values defined in the workflow (for example `ci-test@upi` and account `12345678901`). Never put real business, bank or UPI details in the workflow or in GitHub secrets for CI.
+
 ## Manual checks before release
 
 - Real devices: iOS Safari and Android Chrome (checkout, the UPI app hand-off, file upload).
