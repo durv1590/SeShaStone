@@ -453,6 +453,50 @@ async function seedDemoProducts() {
       },
     },
   });
+
+  // A clearly marked demo necklace set with placeholder drawings (not photographs) served by the
+  // storefront from /demo. It exists only when SEED_DEMO_PRODUCTS=true.
+  const necklaces = await prisma.category.findUniqueOrThrow({ where: { slug: 'necklaces' } });
+  const festive = await prisma.collection.findUniqueOrThrow({ where: { slug: 'festive' } });
+  const webUrl = (env('WEB_URL') ?? 'http://localhost:3000').replace(/\/$/, '');
+  await prisma.product.upsert({
+    where: { slug: 'demo-emerald-drop-necklace-set' },
+    update: {},
+    create: {
+      name: 'Demo Emerald Drop Necklace Set',
+      slug: 'demo-emerald-drop-necklace-set',
+      description:
+        '[DEMO PRODUCT — replace with real product data and photographs before launch.]\n\nA gold-plated necklace with a graduated bead chain and an emerald-green drop pendant, with matching drop earrings.',
+      status: 'ACTIVE',
+      line: 'ARTIFICIAL',
+      categoryId: necklaces.id,
+      metal: 'BRASS',
+      baseMaterial: 'Brass',
+      plating: 'Gold-plated',
+      stoneType: 'Green glass stones',
+      dimensions: 'Necklace 42 cm with a 5 cm extender; earrings 4.5 cm drop',
+      careInstructions: 'Keep away from water, perfume and chemicals. Store in the pouch provided.',
+      isFeatured: true,
+      tags: ['demo', 'necklace-set'],
+      collections: { connect: { id: festive.id } },
+      images: {
+        create: [
+          { url: `${webUrl}/demo/necklace-set-1.svg`, alt: 'Demo placeholder: necklace set with earrings', sortOrder: 0 },
+          { url: `${webUrl}/demo/necklace-set-2.svg`, alt: 'Demo placeholder: pendant close-up', sortOrder: 1 },
+          { url: `${webUrl}/demo/necklace-set-3.svg`, alt: 'Demo placeholder: necklace set on charcoal', sortOrder: 2 },
+        ],
+      },
+      variants: {
+        create: {
+          sku: 'DEMO-NS-EMR-01',
+          title: 'Necklace and earrings',
+          price: 249_900,
+          compareAtPrice: 319_900,
+          inventory: { create: { quantity: 5 } },
+        },
+      },
+    },
+  });
 }
 
 async function main() {

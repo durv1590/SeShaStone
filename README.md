@@ -46,7 +46,7 @@ A complete online jewellery store: a luxury storefront, a permission-based admin
 Requirements: Node.js 20+, Docker.
 
 ```bash
-docker compose up -d                       # Postgres, Redis, MinIO (S3), Meilisearch
+docker compose up -d                       # Postgres, Redis, Meilisearch (MinIO optional)
 npm install                                # all workspaces; generates the Prisma client
 
 cp apps/api/.env.example apps/api/.env     # fill in SEED_* business, bank and UPI values (never committed)
@@ -61,7 +61,7 @@ npm run dev:web     # :3000
 npm run dev:admin   # :3001 — admin@seshastone.com / ChangeMe123! (change immediately)
 ```
 
-For local demo products, set `SEED_DEMO_PRODUCTS=true` before seeding. Create a public-read `seshastone-media` bucket in MinIO (http://localhost:9001) for image uploads.
+For local demo products (a ruby ring and a necklace set with labelled placeholder pictures), set `SEED_DEMO_PRODUCTS=true` before seeding. Uploaded photos are stored in `apps/api/media/` and served by the API at http://localhost:4000/media (`STORAGE_DRIVER=local`, `SERVE_MEDIA=true`).
 
 ## Production
 
