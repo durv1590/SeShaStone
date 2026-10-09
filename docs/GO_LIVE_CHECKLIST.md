@@ -19,7 +19,9 @@
 
 ## Brand and catalogue
 
-- [ ] Approved logo files replace the placeholders in `apps/web/public/brand/` (same file names), then run `npm run brand:generate` only if you are regenerating from new fonts.
+- [x] Final logo generated in `apps/web/public/brand/` (`npm run brand:generate`).
+- [ ] Logo files sent to your printer or packaging supplier, if needed (the SVGs in `apps/web/public/brand/logo/` are print-ready vectors).
+- [ ] Trademark search and registration for the name and monogram (a legal step; not covered by this build).
 - [ ] Real product photography uploaded; no demo products (`SEED_DEMO_PRODUCTS=false`; delete any `DEMO-` SKUs).
 - [ ] Every live product has a line, verified material details, weight, price and stock.
 - [ ] Home hero and campaign banners uploaded in all three sizes.
