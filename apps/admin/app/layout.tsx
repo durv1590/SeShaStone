@@ -8,6 +8,7 @@ const display = localFont({
   weight: '600',
   variable: '--font-display',
   display: 'swap',
+  adjustFontFallback: 'Times New Roman',
   fallback: ['Georgia', 'serif'],
 });
 

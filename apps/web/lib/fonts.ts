@@ -13,6 +13,9 @@ export const display = localFont({
   ],
   variable: '--font-display',
   display: 'swap',
+  // Size the stand-in shown while the font loads from a serif (as next/font/google did), so wide
+  // sans-serif capitals never make headings overflow during the swap.
+  adjustFontFallback: 'Times New Roman',
   fallback: ['Georgia', 'Times New Roman', 'serif'],
 });
 export const body = localFont({
