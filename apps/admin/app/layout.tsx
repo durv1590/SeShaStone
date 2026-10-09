@@ -1,8 +1,16 @@
 import type { Metadata } from 'next';
-import { Cormorant_Garamond } from 'next/font/google';
+import localFont from 'next/font/local';
 import './globals.css';
 
-const display = Cormorant_Garamond({ subsets: ['latin'], weight: ['600'], variable: '--font-display', display: 'swap' });
+// Bundled font file (SIL Open Font License, see ./fonts/), so builds never download from Google Fonts.
+const display = localFont({
+  src: './fonts/cormorant-garamond-latin-600-normal.woff2',
+  weight: '600',
+  variable: '--font-display',
+  display: 'swap',
+  adjustFontFallback: 'Times New Roman',
+  fallback: ['Georgia', 'serif'],
+});
 
 export const metadata: Metadata = {
   title: { default: 'Admin · SeSha Stone', template: '%s · SeSha Stone Admin' },

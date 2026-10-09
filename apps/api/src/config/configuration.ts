@@ -25,6 +25,15 @@ export default () => ({
     publicUrl: process.env.S3_PUBLIC_URL ?? '',
     forcePathStyle: process.env.S3_FORCE_PATH_STYLE === 'true',
   },
+  storage: {
+    // "s3" (S3, R2 or MinIO, uploaded by presigned URL) or "local" (files on this server's disk).
+    driver: process.env.STORAGE_DRIVER === 'local' ? 'local' : 's3',
+    mediaDir: process.env.MEDIA_DIR ?? '/data/media',
+    /** Public base URL the web server serves MEDIA_DIR from, e.g. https://www.seshastone.com/media */
+    mediaUrl: process.env.MEDIA_PUBLIC_URL ?? '',
+    /** Public base URL of this API, used to build local upload links, e.g. https://api.seshastone.com/api/v1 */
+    apiPublicUrl: process.env.API_PUBLIC_URL ?? 'http://localhost:4000/api/v1',
+  },
   search: {
     host: process.env.SEARCH_HOST ?? 'http://localhost:7700',
     apiKey: process.env.SEARCH_API_KEY ?? '',

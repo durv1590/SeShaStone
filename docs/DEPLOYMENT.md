@@ -1,29 +1,105 @@
 # Deployment
 
-## Recommended production topology
+The store runs on **one Linux server (VPS)** with Docker. Everything is in [`deploy/`](../deploy):
 
-| Component | Suggested service | Notes |
+| Service | What it does |
+| --- | --- |
+| `caddy` | Web server. Gets and renews free HTTPS certificates (Let's Encrypt) and routes the three addresses below. Also serves uploaded product images from `/media`. |
+| `web` | Storefront → `https://www.seshastone.com` (the bare `seshastone.com` redirects here) |
+| `admin` | Admin panel → `https://admin.seshastone.com` |
+| `api` | API → `https://api.seshastone.com`. Applies database migrations automatically every time it starts. |
+| `postgres` | Database: orders, payments, customers, products, settings |
+| `redis` | Cache (safe to lose) |
+| `meilisearch` | Product search (the catalogue falls back to database search if it is down) |
+
+Images uploaded in the admin panel are stored on the server's disk (`STORAGE_DRIVER=local`) and included in the backups. The API can also use S3 or Cloudflare R2 instead (`STORAGE_DRIVER=s3` with the `S3_*` variables) if you outgrow one server.
+
+## What you need
+
+- **A domain**: `seshastone.com`, from any registrar (GoDaddy, Hostinger, Namecheap, Cloudflare…). About ₹800–1,200 a year.
+- **A VPS** with Ubuntu 24.04, **at least 2 vCPU, 4 GB RAM and 50 GB disk**, ideally in India (Mumbai or Bangalore) for fast pages. Examples: Hostinger KVM 2, DigitalOcean (BLR1), AWS Lightsail (Mumbai). About ₹800–1,500 a month.
+- The `.env` values: Gmail app password (see **Email** below), your store, UPI and bank details.
+
+## First deployment
+
+### 1. Buy the domain
+
+Buy `seshastone.com`. Turn on the registrar's auto-renew so the store never goes offline because the domain lapsed.
+
+### 2. Rent the server
+
+Create the VPS with **Ubuntu 24.04**. Add your SSH key during setup if the provider offers it; otherwise note the root password it gives you. Write down the server's **public IPv4 address**.
+
+### 3. Point the domain at the server
+
+In your registrar's DNS settings, add four **A records**, each pointing to the server's IPv4 address:
+
+| Type | Name | Value |
 | --- | --- | --- |
-| Storefront `apps/web` | Vercel (or any Node host) → `www.seshastone.com` | `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SITE_URL` |
-| Admin `apps/admin` | Vercel / Node host → `admin.seshastone.com` | `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_STORE_URL`. Consider IP allow-listing or Cloudflare Access |
-| API `apps/api` | Container / Node host (AWS ECS, Render, Railway, a VM) → `api.seshastone.com` | Run `node dist/main` behind HTTPS; one or more instances |
-| PostgreSQL | Managed (AWS RDS, Neon, Supabase, Crunchy) | Point-in-time recovery on |
-| Redis | Managed (Upstash, ElastiCache) | Cache only; safe to lose |
-| Object storage | AWS S3 / Cloudflare R2 + CDN | Public-read bucket for product and campaign images only |
-| Search | Meilisearch Cloud (optional) | The catalogue falls back to database search |
-| Email | Gmail SMTP with an app password (see **Email** below); SES, Brevo or Zoho later | `SMTP_*`; otherwise emails are recorded as SKIPPED |
-| DNS / SSL / WAF | Cloudflare | Full (strict) TLS, HSTS, bot protection |
+| A | `@` | your server IP |
+| A | `www` | your server IP |
+| A | `admin` | your server IP |
+| A | `api` | your server IP |
 
-## Environment variables
+Delete any existing "parking" A or CNAME records for those names. DNS changes usually apply within an hour. Check with `ping www.seshastone.com`: it should show your server's IP.
 
-Examples: `apps/api/.env.example`, `apps/web/.env.example`, `apps/admin/.env.example`.
+### 4. Prepare the server
 
-- Never commit real values.
-- Set `NODE_ENV=production`.
-- Set a long random `JWT_SECRET` (for example `openssl rand -base64 48`).
-- Set `CORS_ORIGINS` to the exact web and admin origins.
-- Set `WEB_URL` to the storefront URL.
-- Never set `E2E_DISABLE_RATE_LIMIT` in production (it is ignored there anyway).
+Connect with `ssh root@YOUR_SERVER_IP`, then run:
+
+```bash
+apt update && apt upgrade -y
+curl -fsSL https://get.docker.com | sh            # Docker and Docker Compose
+ufw allow OpenSSH && ufw allow 80 && ufw allow 443 && ufw allow 443/udp && ufw --force enable
+fallocate -l 4G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile \
+  && echo '/swapfile none swap sw 0 0' >> /etc/fstab   # extra memory for building the apps
+```
+
+### 5. Get the code and create the settings file
+
+```bash
+git clone https://github.com/durv1590/SeShaStone.git /opt/seshastone
+cd /opt/seshastone/deploy
+./init.sh
+```
+
+`init.sh` creates `deploy/.env` with new random secrets and prints the **first admin password**. Save it in a password manager.
+
+Now edit `.env` (`nano .env`) and fill in:
+
+- `ACME_EMAIL`: your email, for certificate notices.
+- `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`: Gmail, see **Email** below. You can leave these empty and add them later; emails are then recorded as skipped.
+- `SEED_STORE_*`, `SEED_GRIEVANCE_OFFICER_NAME`: shown on the contact and policy pages.
+- `SEED_UPI_*`, `SEED_BANK_*`: your payment details. `SEED_UPI_ID` must match the UPI QR in `public/payment/upi-qr/current-upi-qr.png`.
+
+`.env` holds every secret for the store: it is never committed to git. Keep a copy in your password manager.
+
+### 6. Start the store
+
+```bash
+docker compose up -d --build          # first build takes 5–10 minutes
+docker compose ps                     # all services should be "running", api "healthy"
+docker compose exec api npm run prisma:seed
+```
+
+The seed runs once. It creates the admin login, categories, collections and policy pages, imports and verifies the original UPI QR, and fills Admin → Settings from your `.env`. Running it again never overwrites anything you have changed in the admin panel.
+
+### 7. Check it works
+
+- `https://www.seshastone.com` shows the storefront with a padlock (HTTPS). Certificates can take a minute after the first start.
+- `https://admin.seshastone.com`: sign in with `SEED_ADMIN_EMAIL` and the password from step 5.
+- **Admin → Settings**: check the business, payment and UPI QR sections. **Settings → Email → Send test email**.
+- Place a small test order and pay ₹1 by UPI; verify it in **Admin → Payments**.
+
+### 8. Turn on daily backups
+
+```bash
+crontab -e
+# add this line: every night at 02:30
+30 2 * * * /opt/seshastone/deploy/backup.sh >> /var/log/seshastone-backup.log 2>&1
+```
+
+Then work through [GO_LIVE_CHECKLIST.md](GO_LIVE_CHECKLIST.md).
 
 ## Email (Gmail)
 
@@ -32,7 +108,7 @@ The store sends order, payment, shipping and refund emails through Gmail's SMTP 
 1. Sign in to the Gmail account the store will send from.
 2. Turn on **2-Step Verification** at https://myaccount.google.com/security (Google only offers app passwords when it is on).
 3. Open https://myaccount.google.com/apppasswords, enter a name such as "SeSha Stone store", and choose **Create**. Copy the 16-character password Google shows. You will not be able to see it again.
-4. On the API server, set these environment variables (in `apps/api/.env` or your host's secret settings), then restart the API:
+4. On the server, set these in `deploy/.env`, then restart the API with `docker compose up -d api` (from the `deploy` folder):
 
    ```
    SMTP_HOST=smtp.gmail.com
@@ -43,7 +119,7 @@ The store sends order, payment, shipping and refund emails through Gmail's SMTP 
    SMTP_FROM="SeSha Stone <the same Gmail address>"
    ```
 
-5. Check the API log for `Email ready: sending through smtp.gmail.com`. If it says `Email login failed`, the address or app password is wrong.
+5. Check the API log (`docker compose logs api | grep Email`) for `Email ready: sending through smtp.gmail.com`. If it says `Email login failed`, the address or app password is wrong.
 6. In **Admin → Settings → Email**, choose **Send test email** and confirm it arrives (check the spam folder the first time).
 
 Good to know:
@@ -53,41 +129,61 @@ Good to know:
 - Changing your Google password revokes app passwords, so create a new one and update `SMTP_PASS` if that happens.
 - The app password is a secret: never commit it to git or paste it into chat or email.
 
-## First deployment
+## Updating the store
 
-1. Provision PostgreSQL, Redis and the S3 bucket. Create the bucket with public-read on objects and an HTTPS CDN domain.
-2. Configure DNS in Cloudflare:
-   - `www` → storefront host
-   - `admin` → admin host
-   - `api` → API host
-   - apex → redirect to `www`
-3. Build: `npm ci && npm run build`. `postinstall` generates the Prisma client.
-4. Apply migrations: `npm run prisma:deploy -w @seshastone/api`.
-5. Seed once with the production `SEED_*` values in the API environment:
-   `SEED_DEMO_PRODUCTS=false npm run db:seed`
-   This creates the Super Admin, categories, collections and policy pages, imports the verified UPI QR, and fills business settings.
-6. Sign in to the admin panel. Change the seeded admin password: log out, then use "Forgot password", or create a new Super Admin and disable the seeded one.
-7. Complete [GO_LIVE_CHECKLIST.md](GO_LIVE_CHECKLIST.md).
+When new code is merged into `main` on GitHub:
 
-## Updating without losing orders or payments
+```bash
+cd /opt/seshastone/deploy && ./update.sh
+```
 
-- Migrations are additive and committed. Production runs **`prisma migrate deploy`** only, never `migrate dev` or `db push`.
-- Deploy order: **database migration → API → web / admin**. Each migration must stay compatible with the previous API version for the length of the rollout (expand → migrate → contract).
-- Before any migration that drops or rewrites data, take a manual snapshot. Review the SQL in the PR.
-- The API shuts down gracefully on SIGTERM (`enableShutdownHooks`), so let in-flight requests drain before stopping old instances.
+`update.sh` takes a backup, pulls the code, rebuilds and restarts the apps. Database migrations run automatically when the API starts. The storefront is briefly unavailable (usually under a minute) while containers restart, so update at a quiet time.
+
+Rules that keep orders and payments safe:
+
+- Migrations are additive and committed. Production only ever runs **`prisma migrate deploy`** (done automatically), never `migrate dev` or `db push`.
+- Before an update whose migration drops or rewrites data, check the latest backup exists. Review the SQL in the PR.
 - Orders, payments, refunds and audit logs are never deleted by the application.
 
 ## Backups
 
-- Managed PostgreSQL point-in-time recovery, kept for at least 7 days.
-- A nightly `pg_dump -Fc` to a separate, encrypted bucket, kept for 30 days.
-- A monthly restore drill into a staging database.
-- S3 versioning on the media bucket.
+`deploy/backup.sh` writes two files to `deploy/backups/` and keeps 14 days:
 
-## Logging, monitoring and error tracking
+- `db-YYYYMMDD-HHMM.sql.gz`: the full database.
+- `media-YYYYMMDD-HHMM.tar.gz`: all uploaded images.
 
-- The API logs to stdout; ship the logs to your host's log service. Payment secrets, tokens and bank details are never logged.
-- Uptime checks: `GET https://api.seshastone.com/api/v1/health` (DB and cache), plus the storefront home page.
-- Recommended: Sentry, or the host's equivalent, for the API and both Next.js apps.
-- Alerts for 5xx rate, health failures and database CPU and storage.
+**A backup on the same server does not survive losing the server.** Copy them off regularly, for example weekly to your own computer:
+
+```bash
+scp -r root@YOUR_SERVER_IP:/opt/seshastone/deploy/backups ./seshastone-backups
+```
+
+Also turn on your VPS provider's automatic snapshots if offered (usually about 20% of the server price).
+
+To restore the database from a backup (this replaces the current data):
+
+```bash
+cd /opt/seshastone/deploy
+gunzip -c backups/db-YYYYMMDD-HHMM.sql.gz | docker compose exec -T postgres psql -U seshastone -d seshastone
+```
+
+To restore images: `docker compose run --rm --no-deps --user root -v "$(pwd)/backups:/backups" --entrypoint sh api -c "tar -xzf /backups/media-YYYYMMDD-HHMM.tar.gz -C /data/media"`.
+
+## Logs and monitoring
+
+- Logs: `docker compose logs -f api` (or `web`, `admin`, `caddy`). Logs are rotated automatically. Payment secrets, tokens and bank details are never logged.
+- Status: `docker compose ps`. Every service restarts automatically after a crash or server reboot.
+- Uptime check: point a free monitor (UptimeRobot, Better Stack) at `https://api.seshastone.com/api/v1/health` and `https://www.seshastone.com`.
+- Disk space: `df -h`. Images and backups grow over time.
 - Watch the admin dashboard daily for **payments to verify** and **pending refunds**.
+
+## Troubleshooting
+
+| Symptom | Check |
+| --- | --- |
+| Browser shows a certificate error | DNS not pointing at the server yet (`ping www.seshastone.com`), or ports 80/443 blocked. `docker compose logs caddy` shows the reason. |
+| `api` not healthy | `docker compose logs api`. A wrong or missing value in `.env` is the usual cause. The API refuses to start with a weak `JWT_SECRET`. |
+| Build fails with "killed" | The server ran out of memory: add the swap file from step 4. |
+| Emails not arriving | Admin → Settings → Email shows the provider's exact error. |
+| Changed `.env` but nothing happened | Run `docker compose up -d` again. Changes to `DOMAIN` need `docker compose up -d --build`. |
+

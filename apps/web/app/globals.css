@@ -392,8 +392,15 @@ p { margin: 0 0 1em; }
 .draft-banner { border: 1px dashed var(--ss-burgundy); color: var(--ss-burgundy); padding: 12px 16px; font-size: 0.85rem; margin-bottom: 28px; }
 
 /* ── Responsive ─────────────────────────────────────────────── */
-@media (max-width: 1180px) {
-  .nav__link { padding: 0 8px; letter-spacing: 0.1em; }
+/* Logo, menu and icons share one header row down to 1024px. The menu's spacing steps down in two
+   stages so the row always keeps 25px+ spare, absorbing font rendering differences between devices. */
+@media (max-width: 1279px) {
+  .header__inner { gap: 20px; }
+  .nav__link { padding: 0 7px; letter-spacing: 0.08em; }
+}
+@media (max-width: 1129px) {
+  .header__inner { gap: 12px; }
+  .nav__link { padding: 0 4px; letter-spacing: 0.04em; font-size: 0.7rem; }
 }
 @media (max-width: 1100px) {
   .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }

@@ -29,6 +29,7 @@ The source of truth is [`brand/seshastone-brand-reference.png`](../brand/seshast
 - **Cormorant Garamond** (500/600, italic 600): display, headings, product names.
 - **Montserrat** (400/500/600): body, navigation, CTAs, prices (tabular figures).
 - The type scale lives in `apps/web/app/globals.css` (`--text-display-xl` … `--text-promo`).
+- The font files are bundled with the apps (`apps/web/lib/fonts/`, `apps/admin/app/fonts/`, SIL Open Font License), so builds never download from Google Fonts and visitors' browsers never contact Google.
 
 ## Logo system
 
