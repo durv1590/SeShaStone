@@ -4,7 +4,17 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 
+/** Production must never fall back to the development JWT secret. */
+function assertProductionConfig() {
+  if (process.env.NODE_ENV !== 'production') return;
+  const secret = process.env.JWT_SECRET ?? '';
+  if (secret.length < 32 || secret === 'dev-secret' || secret.startsWith('change-me')) {
+    throw new Error('JWT_SECRET must be set to a random value of at least 32 characters in production.');
+  }
+}
+
 async function bootstrap() {
+  assertProductionConfig();
   // rawBody is required to verify payment gateway webhook signatures.
   const app = await NestFactory.create(AppModule, { rawBody: true });
 

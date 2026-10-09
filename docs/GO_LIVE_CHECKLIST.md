@@ -30,13 +30,14 @@
 
 ## Technical
 
-- [ ] `NODE_ENV=production`; strong `JWT_SECRET`; `CORS_ORIGINS` set to the production origins only.
-- [ ] Migrations applied with `prisma migrate deploy`; seed run once.
+- [ ] Domain bought (auto-renew on), VPS rented, DNS A records for `@`, `www`, `admin`, `api` point to it (DEPLOYMENT.md steps 1–3).
+- [ ] `deploy/.env` created with `./init.sh` and filled in; a copy saved in a password manager.
+- [ ] `docker compose up -d --build` running, all services healthy; seed run once (`docker compose exec api npm run prisma:seed`).
 - [ ] Seeded admin password changed; staff accounts created with least-privilege roles; the admin domain restricted.
 - [ ] Gmail app password created and `SMTP_*` set on the server (DEPLOYMENT.md → Email); Admin → Settings → Email shows **Connected** and a test email arrived.
-- [ ] HTTPS everywhere; HSTS; Cloudflare WAF and bot protection on.
-- [ ] Backups (PITR and nightly dumps) enabled; a restore drill done.
-- [ ] Uptime monitor on `/api/v1/health`; error tracking connected.
+- [ ] HTTPS padlock on www, admin and api (Caddy issues certificates automatically); `seshastone.com` redirects to `www`.
+- [ ] Nightly `backup.sh` in cron; backups copied off the server; VPS snapshots on; a restore tried once (DEPLOYMENT.md → Backups).
+- [ ] Uptime monitor on `https://api.seshastone.com/api/v1/health` and the storefront.
 - [ ] `npm run lint && npm run typecheck && npm test && npm run build` pass; `npm run test:e2e` passes against staging.
 - [ ] `robots.txt` and `sitemap.xml` reachable; Search Console verified with the sitemap submitted; `NEXT_PUBLIC_SITE_URL` correct.
 - [ ] Real-device checks from [TESTING.md](TESTING.md#manual-checks-before-release).

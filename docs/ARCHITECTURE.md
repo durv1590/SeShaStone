@@ -11,7 +11,7 @@ SeSha Stone is an npm-workspaces monorepo with three applications and a shared P
                               REST  /api/v1  (JWT)
                         apps/api (NestJS 11 + Prisma 6)
       ┌──────────────┬───────────┬──────────┬────────────┬──────────────┐
-  PostgreSQL       Redis     S3 / MinIO  Meilisearch   SMTP (optional)  Razorpay / Cashfree
+  PostgreSQL       Redis   Media (disk/S3) Meilisearch   SMTP (optional)  Razorpay / Cashfree
  (system of      (cache,     (product &   (product      (transactional   (optional, not
   record)         rate data)  campaign     search, DB    email)           activated)
                               images)      fallback)
@@ -23,7 +23,7 @@ The admin panel is a separate app (not `web/app/admin`), so back-office code and
 
 | Area | Modules |
 | --- | --- |
-| Infrastructure | `prisma`, `redis` (best-effort cache), `storage` (S3 presigned uploads), `search` (Meilisearch), `notifications` (SMTP or recorded as SKIPPED), `audit` (append-only log) |
+| Infrastructure | `prisma`, `redis` (best-effort cache), `storage` (signed upload links: local disk served by Caddy in production, or S3/R2), `search` (Meilisearch), `notifications` (SMTP or recorded as SKIPPED), `audit` (append-only log) |
 | Identity | `auth` (JWT, password reset, admin login), `users` (staff and roles), `customers`, `addresses` |
 | Catalogue | `products` (lines, attributes, variants, images, related, bestsellers), `categories`, `collections`, `inventory`, `reviews`, `wishlist` |
 | Commerce | `orders` (quote, checkout, lifecycle, returns, tracking, dashboard), `payments` (gateways, manual UPI/bank, evidence, refunds), `coupons` |

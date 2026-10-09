@@ -1,0 +1,45 @@
+# HTTPS certificates are issued and renewed automatically by Let's Encrypt.
+{
+	email {$ACME_EMAIL}
+}
+
+(common) {
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+	}
+}
+
+# The bare domain redirects to www.
+{$DOMAIN} {
+	redir https://www.{$DOMAIN}{uri} permanent
+}
+
+www.{$DOMAIN} {
+	import common
+	# Product, collection and campaign images uploaded from the admin panel.
+	handle_path /media/* {
+		root * /srv/media
+		header Cache-Control "public, max-age=31536000, immutable"
+		header X-Content-Type-Options nosniff
+		file_server
+	}
+	handle {
+		reverse_proxy web:3000
+	}
+}
+
+admin.{$DOMAIN} {
+	import common
+	header X-Robots-Tag "noindex, nofollow"
+	reverse_proxy admin:3001
+}
+
+api.{$DOMAIN} {
+	import common
+	request_body {
+		max_size 12MB
+	}
+	reverse_proxy api:4000
+}

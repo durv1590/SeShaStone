@@ -1,0 +1,16 @@
+# Keep build context small and never send secrets or local data into images.
+**/node_modules
+**/.next
+**/dist
+**/.env
+**/.env.*
+!**/.env.example
+.git
+test-results
+playwright-report
+e2e
+docs
+brand
+deploy/.env
+deploy/backups
+*.log

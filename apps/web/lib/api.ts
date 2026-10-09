@@ -1,4 +1,6 @@
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api/v1';
+/** On the server, call the API over the private network when API_INTERNAL_URL is set (e.g. http://api:4000/api/v1). */
+const BASE_URL = typeof window === 'undefined' ? (process.env.API_INTERNAL_URL ?? API_URL) : API_URL;
 
 export class ApiError extends Error {
   constructor(
@@ -19,7 +21,7 @@ type ApiInit = RequestInit & { token?: string | null; revalidate?: number };
 export async function api<T>(path: string, init: ApiInit = {}): Promise<T> {
   const { token, headers, revalidate, ...rest } = init;
   const isForm = typeof FormData !== 'undefined' && rest.body instanceof FormData;
-  const res = await fetch(`${API_URL}${path}`, {
+  const res = await fetch(`${BASE_URL}${path}`, {
     ...rest,
     headers: {
       ...(isForm ? {} : { 'Content-Type': 'application/json' }),

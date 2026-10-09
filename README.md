@@ -63,6 +63,10 @@ npm run dev:admin   # :3001 — admin@seshastone.com / ChangeMe123! (change imme
 
 For local demo products, set `SEED_DEMO_PRODUCTS=true` before seeding. Create a public-read `seshastone-media` bucket in MinIO (http://localhost:9001) for image uploads.
 
+## Production
+
+The store runs on a single Linux server with Docker: Caddy (automatic HTTPS), the three apps, PostgreSQL, Redis and Meilisearch. Everything is in [`deploy/`](deploy); [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) walks through buying the domain, renting the server, first deployment, updates and backups.
+
 ## Business, bank and UPI details
 
 These are **database settings**, edited in Admin → Settings. They are never in code or git; this repository is public.

@@ -1,0 +1,115 @@
+# SeSha Stone production stack for a single server. See docs/DEPLOYMENT.md.
+#   cd deploy && ./init.sh            # first time: creates .env with random secrets
+#   docker compose up -d --build      # build and start everything
+# Caddy serves HTTPS for:
+#   https://www.$DOMAIN    storefront (and /media/* product images)
+#   https://admin.$DOMAIN  admin panel
+#   https://api.$DOMAIN    API
+name: seshastone
+
+x-restart: &restart
+  restart: unless-stopped
+  logging:
+    driver: json-file
+    options: { max-size: "10m", max-file: "5" }
+
+services:
+  caddy:
+    <<: *restart
+    image: caddy:2-alpine
+    ports: ["80:80", "443:443", "443:443/udp"]
+    environment:
+      DOMAIN: ${DOMAIN:?Set DOMAIN in deploy/.env}
+      ACME_EMAIL: ${ACME_EMAIL:?Set ACME_EMAIL in deploy/.env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - media:/srv/media:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on: [web, admin, api]
+
+  postgres:
+    <<: *restart
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: seshastone
+      POSTGRES_DB: seshastone
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run ./init.sh first}
+    volumes: [postgres-data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U seshastone"]
+      interval: 5s
+      retries: 20
+
+  redis:
+    <<: *restart
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "128mb", "--maxmemory-policy", "allkeys-lru"]
+
+  meilisearch:
+    <<: *restart
+    image: getmeili/meilisearch:v1.11
+    environment:
+      MEILI_ENV: production
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY:?Run ./init.sh first}
+      MEILI_NO_ANALYTICS: "true"
+    volumes: [meili-data:/meili_data]
+
+  api:
+    <<: *restart
+    build: { context: .., target: api }
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      PORT: "4000"
+      DATABASE_URL: postgresql://seshastone:${POSTGRES_PASSWORD}@postgres:5432/seshastone?schema=public
+      REDIS_URL: redis://redis:6379
+      SEARCH_HOST: http://meilisearch:7700
+      SEARCH_API_KEY: ${MEILI_MASTER_KEY}
+      CORS_ORIGINS: https://www.${DOMAIN},https://admin.${DOMAIN}
+      WEB_URL: https://www.${DOMAIN}
+      STORAGE_DRIVER: local
+      MEDIA_DIR: /data/media
+      MEDIA_PUBLIC_URL: https://www.${DOMAIN}/media
+      API_PUBLIC_URL: https://api.${DOMAIN}/api/v1
+    volumes: [media:/data/media]
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_started }
+      meilisearch: { condition: service_started }
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:4000/api/v1/health | grep -q '\"db\":\"up\"'"]
+      interval: 10s
+      start_period: 60s
+      retries: 6
+
+  web:
+    <<: *restart
+    build:
+      context: ..
+      target: web
+      args:
+        NEXT_PUBLIC_API_URL: https://api.${DOMAIN}/api/v1
+        NEXT_PUBLIC_SITE_URL: https://www.${DOMAIN}
+    environment:
+      API_INTERNAL_URL: http://api:4000/api/v1
+    depends_on:
+      api: { condition: service_healthy }
+
+  admin:
+    <<: *restart
+    build:
+      context: ..
+      target: admin
+      args:
+        NEXT_PUBLIC_API_URL: https://api.${DOMAIN}/api/v1
+        NEXT_PUBLIC_STORE_URL: https://www.${DOMAIN}
+    depends_on:
+      api: { condition: service_healthy }
+
+volumes:
+  postgres-data:
+  meili-data:
+  media:
+  caddy-data:
+  caddy-config:
