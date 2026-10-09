@@ -1,0 +1,7 @@
+# Shell scripts and server config must keep Unix line endings, including on Windows checkouts,
+# or they fail in Git Bash and inside the containers.
+*.sh text eol=lf
+deploy/Caddyfile text eol=lf
+deploy/*.yml text eol=lf
+deploy/.env.example text eol=lf
+Dockerfile text eol=lf

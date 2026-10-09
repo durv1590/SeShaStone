@@ -65,6 +65,8 @@ For local demo products (a ruby ring and a necklace set with labelled placeholde
 
 ## Production
 
+To review the complete store on your own computer first (no domain or server needed), run `deploy/preview.sh start`; see [docs/DEPLOYMENT.md → Preview on your computer](docs/DEPLOYMENT.md#preview-on-your-computer).
+
 The store runs on a single Linux server with Docker: Caddy (automatic HTTPS), the three apps, PostgreSQL, Redis and Meilisearch. Everything is in [`deploy/`](deploy); [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) walks through buying the domain, renting the server, first deployment, updates and backups.
 
 ## Business, bank and UPI details
