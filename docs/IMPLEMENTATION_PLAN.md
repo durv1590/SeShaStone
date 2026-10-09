@@ -34,13 +34,13 @@ This document maps the master brief against what the repository already contains
 - **Security:** Helmet headers, rate limiting (strict on auth and order tracking), upload validation by magic bytes, and audit logging.
 - **Quality:** ESLint, unit tests, a Playwright end-to-end suite, and a responsive overflow check at the nine required widths.
 - **Docs:** the twelve documents listed in the brief.
+- **Logo:** the placeholder logo system was replaced with the final woven SS monogram (Concept 1 of the brand reference); see BRAND_GUIDELINES.md.
 
 ## Deferred, and why
 
 | Item | Reason |
 | --- | --- |
 | Product photography, campaign and packaging artwork | Needs real photos of real pieces; the brief forbids fabricated jewellery imagery. Placeholders plus admin upload are provided. |
-| Final logo files | No approved logo was supplied. The SVG system is marked as temporary. |
 | Guest checkout, server-side cart | Needs a verified email/OTP channel to secure guest order access. Requires an email or SMS provider first. |
 | Pincode serviceability checker | Needs courier serviceability data or a courier API. |
 | Customer testimonials, social gallery | No genuine testimonials or Instagram feed supplied; omitted rather than invented. |

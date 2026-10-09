@@ -35,7 +35,7 @@ A complete online jewellery store: a luxury storefront, a permission-based admin
   - Business and payment settings with masking, confirmation and change history.
   - Staff management and an audit log.
 - **Brand:** design tokens, Cormorant Garamond + Montserrat, an SS monogram logo system, favicons and app icons.
-  - Logo artwork is a **temporary placeholder** until approved files are supplied; see [docs/BRAND_GUIDELINES.md](docs/BRAND_GUIDELINES.md).
+  - Logo files are generated from `scripts/brand/generate.mjs`; see [docs/BRAND_GUIDELINES.md](docs/BRAND_GUIDELINES.md).
 - **Quality:**
   - ESLint, TypeScript and unit tests.
   - A Playwright API, journey, responsive (9 widths) and axe accessibility suite.

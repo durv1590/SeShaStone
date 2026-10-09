@@ -1,13 +1,14 @@
 import { MONOGRAM, WORDMARK } from './brand-paths';
 
 /**
- * SS monogram. Path-based (no font dependency). The mask cuts a hairline where the front S
- * crosses the back S so the letters interlock on any background.
- * TEMPORARY PLACEHOLDER until the approved logo artwork is supplied.
+ * SS monogram, drawn from the same path data as the logo files (no font dependency).
+ * The two S letters interlock on any background.
  */
 export function BrandMark({ size = 40, title, className }: { size?: number; title?: string; className?: string }) {
-  const id = `ss-mask-${size}`;
-  const { width: w, height: h, gap, back, front } = MONOGRAM;
+  const id = `ss-${size}`;
+  const { width: w, height: h, gap, weave, back, front } = MONOGRAM;
+  const box = { x: -10, y: -10, width: w + 20, height: h + 20 };
+  const knockout = (d: string) => <path d={d} fill="#000" stroke="#000" strokeWidth={gap * 2} strokeLinejoin="round" />;
   return (
     <svg
       className={className}
@@ -18,13 +19,24 @@ export function BrandMark({ size = 40, title, className }: { size?: number; titl
       aria-hidden={title ? undefined : true}
       aria-label={title}
     >
-      <mask id={id} maskUnits="userSpaceOnUse" x={-10} y={-10} width={w + 20} height={h + 20}>
-        <rect x={-10} y={-10} width={w + 20} height={h + 20} fill="#fff" />
-        <path d={front} fill="#000" stroke="#000" strokeWidth={gap * 2} strokeLinejoin="round" />
+      {/* Each S is cut by a hairline knockout of the other where it passes underneath; `weave` is where the order flips. */}
+      <clipPath id={`${id}o`}>
+        <path clipRule="evenodd" d={`M-10 -10H${w + 10}V${h + 10}H-10Z${weave}`} />
+      </clipPath>
+      <clipPath id={`${id}i`}>
+        <path d={weave} />
+      </clipPath>
+      <mask id={`${id}a`} maskUnits="userSpaceOnUse" {...box}>
+        <rect {...box} fill="#fff" />
+        <g clipPath={`url(#${id}o)`}>{knockout(front)}</g>
+      </mask>
+      <mask id={`${id}b`} maskUnits="userSpaceOnUse" {...box}>
+        <rect {...box} fill="#fff" />
+        <g clipPath={`url(#${id}i)`}>{knockout(back)}</g>
       </mask>
       <g fill="currentColor">
-        <path d={back} mask={`url(#${id})`} />
-        <path d={front} />
+        <path d={back} mask={`url(#${id}a)`} />
+        <path d={front} mask={`url(#${id}b)`} />
       </g>
     </svg>
   );
