@@ -14,6 +14,57 @@ The store runs on **one Linux server (VPS)** with Docker. Everything is in [`dep
 
 Images uploaded in the admin panel are stored on the server's disk (`STORAGE_DRIVER=local`) and included in the backups. The API can also use S3 or Cloudflare R2 instead (`STORAGE_DRIVER=s3` with the `S3_*` variables) if you outgrow one server.
 
+## Preview on your computer
+
+Before buying a domain or server, you can run the complete store on your own computer, the same way it will run on the server, and review everything: the storefront, checkout, the admin panel and photo uploads. Nothing is visible to anyone else, and nothing needs to be bought.
+
+You need a computer with **at least 8 GB of RAM and 15 GB of free disk space**.
+
+### 1. Install two programs (once)
+
+- **Docker Desktop**: https://www.docker.com/products/docker-desktop/. On Windows, accept the "WSL 2" option during installation and restart when asked. Open Docker Desktop once and wait until it says it is running.
+- **Git**: https://git-scm.com/downloads. On Windows this also installs **Git Bash**, the terminal to use for the commands below. On a Mac, use the Terminal app.
+
+### 2. Download the store
+
+Open Git Bash (Windows) or Terminal (Mac) and run:
+
+```bash
+git clone https://github.com/durv1590/SeShaStone.git
+cd SeShaStone/deploy
+./preview.sh start
+```
+
+The first `./preview.sh start` creates the settings file `deploy/.env` and prints your **first admin password**. Save it.
+
+### 3. Fill in your details
+
+Open `deploy/.env` in a text editor (on Windows: `notepad .env`; on a Mac: `open -e .env`) and fill in the `SEED_*` lines: store email and phone, `SEED_UPI_ID` (the UPI ID in your QR code), payee name, bank details and `SEED_GRIEVANCE_OFFICER_NAME`. Save the file. These are read once, when the store is first set up; after that, change them in **Admin → Settings**.
+
+### 4. Start the store
+
+```bash
+./preview.sh start
+```
+
+The first start builds everything and takes 10–20 minutes; later starts take under a minute. When it finishes, open:
+
+- **Storefront:** http://localhost:3000. The preview includes two demo products: a ruby ring and a necklace set with placeholder pictures.
+- **Admin panel:** http://localhost:3001. Sign in with `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD` from `.env`.
+
+Try a full order: place it with UPI, enter any 12-digit UTR, then verify the payment in **Admin → Payments**. Add real products and photos in **Admin → Products** to see them on the storefront. Emails are skipped unless you fill in the `SMTP_*` lines.
+
+### 5. Stop, restart or start over
+
+```bash
+./preview.sh stop     # stop; everything you added is kept
+./preview.sh start    # start again
+./preview.sh reset    # delete all preview data and start from scratch next time
+./preview.sh logs     # show the API log if something looks wrong
+```
+
+When you're happy, follow the steps below to put the store on a real server. The server starts with a fresh database, so products you add in the preview stay on your computer; re-enter them on the live store, which also ensures no demo data goes live.
+
 ## What you need
 
 - **A domain**: `seshastone.com`, from any registrar (GoDaddy, Hostinger, Namecheap, Cloudflare…). About ₹800–1,200 a year.

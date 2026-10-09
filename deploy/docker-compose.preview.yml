@@ -1,0 +1,30 @@
+# Local preview: the production stack on your own computer, without a domain or HTTPS.
+#   ./preview.sh start      (or see docs/DEPLOYMENT.md → Preview on your computer)
+#   Storefront http://localhost:3000 · Admin http://localhost:3001 · API http://localhost:4000
+# Caddy is not started; uploaded images are served by the API at http://localhost:4000/media.
+services:
+  caddy:
+    profiles: ["production"]
+
+  api:
+    ports: ["127.0.0.1:4000:4000"]
+    environment:
+      CORS_ORIGINS: http://localhost:3000,http://localhost:3001
+      WEB_URL: http://localhost:3000
+      MEDIA_PUBLIC_URL: http://localhost:4000/media
+      API_PUBLIC_URL: http://localhost:4000/api/v1
+      SERVE_MEDIA: "true"
+
+  web:
+    ports: ["127.0.0.1:3000:3000"]
+    build:
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:4000/api/v1
+        NEXT_PUBLIC_SITE_URL: http://localhost:3000
+
+  admin:
+    ports: ["127.0.0.1:3001:3001"]
+    build:
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:4000/api/v1
+        NEXT_PUBLIC_STORE_URL: http://localhost:3000
