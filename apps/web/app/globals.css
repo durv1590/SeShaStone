@@ -386,6 +386,9 @@ p { margin: 0 0 1em; }
 /* CMS / prose */
 .prose { max-width: 760px; margin: 0 auto; }
 .prose p { white-space: pre-line; line-height: 1.8; }
+.prose .prose-heading { font-size: var(--text-h3); margin: 36px 0 12px; }
+.prose .prose-list { padding-left: 1.2em; line-height: 1.8; margin: 0 0 1em; }
+.prose .prose-list li { margin-bottom: 4px; }
 .draft-banner { border: 1px dashed var(--ss-burgundy); color: var(--ss-burgundy); padding: 12px 16px; font-size: 0.85rem; margin-bottom: 28px; }
 
 /* ── Responsive ─────────────────────────────────────────────── */

@@ -2,7 +2,9 @@
 
 ## Business and legal
 
-- [ ] Replace every **draft** policy page (Admin → Banners & CMS): privacy, terms, shipping, cancellation, returns, refunds, payment, FAQs. Legal review done. (Draft pages are noindexed and show a banner until the `DRAFT —` paragraph is removed.)
+- [x] Policy pages written (privacy, terms, shipping, cancellation, returns, refunds, payment, FAQs, contact): 7-day returns, All-India delivery with dispatch in 2–4 business days, refunds to the original payment method within 7 business days, New Delhi jurisdiction.
+- [ ] `SEED_GRIEVANCE_OFFICER_NAME` and `SEED_STORE_ADDRESS` set before seeding production, so the Grievance Officer and registered address appear on the policy and contact pages.
+- [ ] A lawyer has reviewed the privacy policy and terms.
 - [ ] Confirm the trust messages (Settings → Storefront) are backed by real policies: authentic jewellery, pan-India delivery, easy returns…
 - [ ] GSTIN, business address and contact details entered in Settings.
 - [ ] A grievance officer / contact details as required for Indian e-commerce.

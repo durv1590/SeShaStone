@@ -38,7 +38,7 @@ Manage staff in **Staff & roles**. At least one active Super Admin must always e
 - **Collections:** hand-picked collections (assign products on the product page) or automatic ones (newest, bestselling).
 - **Banners & CMS:**
   - Campaigns take desktop (1920×700), tablet (1280×700) and mobile (1080×1350) images, a button label, a link (a site path or https URL only), a theme, a priority and start/end dates.
-  - Policy pages ship as clearly marked drafts; replace the text with approved wording.
+  - Policy pages (privacy, terms, shipping, cancellation, returns, refunds, payment, FAQs, contact) are seeded with the store's policies. Edit them here when a policy changes; the seed never overwrites a page you have edited. In page text, a blank line starts a new paragraph, "## " starts a heading and lines starting with "- " form a list.
 - **Settings:** see [BUSINESS_SETTINGS_GUIDE.md](BUSINESS_SETTINGS_GUIDE.md).
 - **Audit log:** every settings change, account-number reveal, payment verification or rejection, refund, order status change, product change and staff change, with who, when and from which IP.
 

@@ -29,7 +29,7 @@ This document maps the master brief against what the repository already contains
 - **Orders:** statuses `PACKED`, `OUT_FOR_DELIVERY`, `RETURN_REQUESTED` and `RETURNED`; idempotent checkout against duplicate submissions; billing address; public order tracking.
 - **Admin:** RBAC with SUPER_ADMIN, ADMIN, ORDER_MANAGER, PRODUCT_MANAGER, MARKETING_MANAGER, SUPPORT (plus legacy STAFF); staff user management; audit log and viewer; payment settings screen (mask, reveal, confirm, change history); refunds; collections; campaign banners with desktop, tablet and mobile images.
 - **Catalogue:** jewellery line plus line-specific attributes (hallmark, finish, plating, diamond carat/cut/colour/clarity, certificate, care); collections (manual / newest / bestselling); SEO routes `/gold`, `/gold/rings`, `/collections/bridal`, `/product/[slug]`, `/search`.
-- **Storefront:** utility bar, mega menu, mobile drawer, redesigned home page, product gallery and specifications, wishlist page, account pages, forgot/reset password, draft policy pages.
+- **Storefront:** utility bar, mega menu, mobile drawer, redesigned home page, product gallery and specifications, wishlist page, account pages, forgot/reset password, policy pages.
 - **SEO:** metadata, canonical URLs, Open Graph, `sitemap.xml`, `robots.txt`, and JSON-LD for Organization, WebSite, Product and BreadcrumbList.
 - **Security:** Helmet headers, rate limiting (strict on auth and order tracking), upload validation by magic bytes, and audit logging.
 - **Quality:** ESLint, unit tests, a Playwright end-to-end suite, and a responsive overflow check at the nine required widths.
