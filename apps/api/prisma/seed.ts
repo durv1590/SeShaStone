@@ -185,7 +185,7 @@ function buildPages(c: Contact): Record<string, { title: string; content: string
           '- nominate someone to exercise these rights for you;',
           '- raise a grievance with us, and then with the Data Protection Board of India.',
         ),
-        reachUs ? `To exercise any of these rights, contact us:\n${reachUs}` : 'To exercise any of these rights, contact our Grievance Officer below.',
+        reachUs ? `To exercise any of these rights, contact us:\n\n${reachUs}` : 'To exercise any of these rights, contact our Grievance Officer below.',
         '## Security',
         'Our website uses HTTPS encryption, passwords are stored only in hashed form, and access to your data is limited to staff who need it to serve you.',
         '## Children',
@@ -304,7 +304,7 @@ function buildPages(c: Contact): Record<string, { title: string; content: string
         'We refund you to your original payment method — the UPI ID or bank account you paid from — within 7 business days of the cancellation, or of the returned piece passing inspection.',
         'We email you when the refund is made, with the transaction reference. Your bank may take a little longer to show it in your account.',
         '## Questions',
-        reachUs ? `If you have not received a refund you were expecting, contact us with your order number:\n${reachUs}` : 'If you have not received a refund you were expecting, contact us with your order number.',
+        reachUs ? `If you have not received a refund you were expecting, contact us with your order number:\n\n${reachUs}` : 'If you have not received a refund you were expecting, contact us with your order number.',
       ].join('\n\n'),
     },
 
