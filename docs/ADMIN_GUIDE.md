@@ -44,4 +44,6 @@ Manage staff in **Staff & roles**. At least one active Super Admin must always e
 
 ## Notifications
 
-Order, payment, shipping and refund emails are sent only when SMTP is configured (see [DEPLOYMENT.md](DEPLOYMENT.md)). Each order page lists every notification with its status. **SKIPPED** means no email provider is configured; nothing was sent.
+Order, payment, shipping and refund emails are sent only when SMTP is configured (see [DEPLOYMENT.md](DEPLOYMENT.md) → Email). Each order page lists every notification with its status. **SKIPPED** means no email provider is configured; nothing was sent. **FAILED** shows the provider's error.
+
+**Admin → Settings → Email** shows whether email is connected, which server it uses and the address it sends as. **Check connection** re-tests the login; **Send test email** (Admin and Super Admin) sends a test to you or to an address you enter, and is recorded in the audit log.

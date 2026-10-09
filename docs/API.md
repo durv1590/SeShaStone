@@ -63,5 +63,7 @@ All request bodies are validated, and unknown fields are rejected. Errors return
 | GET | `/admin/settings`, `/admin/settings/history`, `/admin/settings/upi-qr` [settings.view] |
 | PUT | `/admin/settings`: store/shipping keys need settings.business.edit; `payments.*` keys need settings.payment.edit **and** `confirmFinancialChange: true` |
 | POST | `/admin/settings/reveal` (audited) · POST/DELETE `/admin/settings/upi-qr` [settings.payment.edit] |
+| GET | `/admin/settings/email` [settings.view]: email provider status (never the password); `?check=true` re-tests the SMTP login |
+| POST | `/admin/settings/email/test` [settings.business.edit, 5/min]: sends a test email to `to`, or to the signed-in user; audited |
 | GET/POST/PATCH | `/admin/users`, `/admin/users/roles` [users.manage] |
 | GET | `/admin/audit-logs` [audit.view] |

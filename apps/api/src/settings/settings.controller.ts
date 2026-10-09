@@ -11,12 +11,15 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { Throttle } from '@nestjs/throttler';
 import { ApiBearerAuth, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
-import { IsBoolean, IsInt, IsObject, IsOptional, IsString, Min } from 'class-validator';
+import { IsBoolean, IsEmail, IsInt, IsObject, IsOptional, IsString, Min } from 'class-validator';
 import { Actor, CurrentActor } from '../common/decorators/actor.decorator';
 import { RequirePermissions } from '../common/decorators/permissions.decorator';
 import { Public } from '../common/decorators/public.decorator';
+import { AuditService } from '../audit/audit.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { SettingsService } from './settings.service';
 
 class UpdateSettingsDto {
@@ -32,6 +35,11 @@ class UploadQrDto {
   @IsOptional() @Transform(({ value }) => value === 'true' || value === true) @IsBoolean() confirm?: boolean;
 }
 
+class TestEmailDto {
+  /** Defaults to the signed-in staff member's own email address. */
+  @IsOptional() @IsEmail() to?: string;
+}
+
 class HistoryDto {
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) page?: number;
 }
@@ -39,7 +47,11 @@ class HistoryDto {
 @ApiTags('settings')
 @Controller()
 export class SettingsController {
-  constructor(private readonly settings: SettingsService) {}
+  constructor(
+    private readonly settings: SettingsService,
+    private readonly notifications: NotificationsService,
+    private readonly audit: AuditService,
+  ) {}
 
   @Public()
   @Get('settings')
@@ -75,6 +87,27 @@ export class SettingsController {
   @Get('admin/settings/history')
   history(@Query() q: HistoryDto) {
     return this.settings.history(q.page ?? 1);
+  }
+
+  /** Email provider status. The SMTP password itself is never returned. */
+  @ApiBearerAuth()
+  @RequirePermissions('settings.view')
+  @Get('admin/settings/email')
+  async emailStatus(@Query('check') check?: string) {
+    if (check === 'true') await this.notifications.checkConnection();
+    return this.notifications.status();
+  }
+
+  @ApiBearerAuth()
+  @RequirePermissions('settings.business.edit')
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Post('admin/settings/email/test')
+  @HttpCode(200)
+  async testEmail(@CurrentActor() actor: Actor, @Body() dto: TestEmailDto) {
+    const to = dto.to ?? actor.email;
+    const result = await this.notifications.sendTest(to);
+    await this.audit.record(actor, { action: 'settings.email_test', entityType: 'Notification', after: { to, ok: result.ok } });
+    return { ...result, to };
   }
 
   @ApiBearerAuth()
