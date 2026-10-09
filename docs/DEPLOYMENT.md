@@ -37,7 +37,7 @@ Examples: `apps/api/.env.example`, `apps/web/.env.example`, `apps/admin/.env.exa
 4. Apply migrations: `npm run prisma:deploy -w @seshastone/api`.
 5. Seed once with the production `SEED_*` values in the API environment:
    `SEED_DEMO_PRODUCTS=false npm run db:seed`
-   This creates the Super Admin, categories, collections and draft policy pages, imports the verified UPI QR, and fills business settings.
+   This creates the Super Admin, categories, collections and policy pages, imports the verified UPI QR, and fills business settings.
 6. Sign in to the admin panel. Change the seeded admin password: log out, then use "Forgot password", or create a new Super Admin and disable the seeded one.
 7. Complete [GO_LIVE_CHECKLIST.md](GO_LIVE_CHECKLIST.md).
 

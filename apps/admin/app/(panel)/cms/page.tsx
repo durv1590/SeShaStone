@@ -192,7 +192,7 @@ export default function CmsPage() {
           <h2>Pages &amp; policies</h2>
           <button className="btn btn-sm" onClick={() => setEditingPage({ isPublished: false })}>New page</button>
         </div>
-        <p className="muted">Policy pages start as clearly marked drafts. Replace the draft text with approved wording before launch (removing the “DRAFT —” paragraph also allows search engines to index the page).</p>
+        <p className="muted">Edit a policy page here whenever the policy changes. A page whose text starts with “DRAFT —” shows a draft banner and is hidden from search engines.</p>
         {editingPage && (
           <form className="form panel" onSubmit={savePage} key={editingPage.id ?? 'new'} style={{ background: '#fbf9f4' }}>
             <div className="form-grid">
@@ -201,7 +201,7 @@ export default function CmsPage() {
               <label className="field">SEO title<input className="input" name="seoTitle" maxLength={70} defaultValue={editingPage.seoTitle ?? ''} /></label>
               <label className="field">SEO description<input className="input" name="seoDescription" maxLength={160} defaultValue={editingPage.seoDescription ?? ''} /></label>
             </div>
-            <label className="field">Content <small className="muted">(blank line = new paragraph)</small><textarea name="content" rows={14} defaultValue={editingPage.content ?? ''} required /></label>
+            <label className="field">Content <small className="muted">(blank line = new paragraph · start a paragraph with “## ” for a heading · start each line with “- ” for a list)</small><textarea name="content" rows={14} defaultValue={editingPage.content ?? ''} required /></label>
             <label className="check"><input type="checkbox" name="isPublished" defaultChecked={editingPage.isPublished} /> Published</label>
             <div className="toolbar">
               <button className="btn">Save page</button>

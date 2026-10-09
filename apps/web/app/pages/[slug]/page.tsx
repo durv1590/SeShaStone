@@ -36,6 +36,23 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   });
 }
 
+/**
+ * CMS content is plain text: a blank line starts a new block, a block starting with "## " is a
+ * heading, and a block whose lines all start with "- " is a bulleted list.
+ */
+function Block({ text }: { text: string }) {
+  if (text.startsWith('## ')) return <h2 className="prose-heading">{text.slice(3)}</h2>;
+  const lines = text.split('\n');
+  if (lines.every((line) => line.startsWith('- '))) {
+    return (
+      <ul className="prose-list">
+        {lines.map((line, i) => <li key={i}>{line.slice(2)}</li>)}
+      </ul>
+    );
+  }
+  return <p>{text}</p>;
+}
+
 export default async function CmsPageView({ params }: Props) {
   const page = await getPage((await params).slug);
   const [first, ...rest] = page.content.split(/\n{2,}/);
@@ -48,7 +65,7 @@ export default async function CmsPageView({ params }: Props) {
         <div className="prose">
           <h1 style={{ marginBottom: 24 }}>{page.title}</h1>
           {isDraft && <p className="draft-banner" role="note">{first}</p>}
-          {paragraphs.map((para, i) => <p key={i}>{para}</p>)}
+          {paragraphs.map((block, i) => <Block key={i} text={block} />)}
           <p className="muted" style={{ fontSize: '0.8rem' }}>Last updated {new Date(page.updatedAt).toLocaleDateString('en-IN', { dateStyle: 'long' })}</p>
         </div>
       </article>

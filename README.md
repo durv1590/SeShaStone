@@ -54,7 +54,7 @@ cp apps/web/.env.example apps/web/.env.local
 cp apps/admin/.env.example apps/admin/.env.local
 
 npm run db:migrate
-npm run db:seed                            # Super Admin, categories, collections, draft policies, verified UPI QR
+npm run db:seed                            # Super Admin, categories, collections, policy pages, verified UPI QR
 
 npm run dev:api     # :4000
 npm run dev:web     # :3000
