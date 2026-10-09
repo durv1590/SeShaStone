@@ -1,0 +1,101 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Lint, typecheck, unit tests, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  e2e:
+    name: End-to-end (Playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: seshastone
+          POSTGRES_PASSWORD: seshastone
+          POSTGRES_DB: seshastone
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U seshastone" --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      # Test-only values. Real business, bank and UPI details are never stored in CI.
+      E2E_DISABLE_RATE_LIMIT: 'true'
+      DATABASE_URL: postgresql://seshastone:seshastone@localhost:5432/seshastone?schema=public
+      REDIS_URL: redis://localhost:6379
+      JWT_SECRET: ci-only-jwt-secret-not-used-anywhere-else
+      CORS_ORIGINS: http://localhost:3000,http://localhost:3001
+      WEB_URL: http://localhost:3000
+      SEED_STORE_LEGAL_NAME: CI Test Store
+      SEED_STORE_EMAIL: ci@example.com
+      SEED_UPI_ID: ci-test@upi
+      SEED_UPI_PAYEE_NAME: CI Test
+      SEED_BANK_NAME: CI Test Bank
+      SEED_BANK_ACCOUNT_NAME: CI Test
+      SEED_BANK_ACCOUNT_NUMBER: '12345678901'
+      SEED_BANK_IFSC: TEST0000001
+      SEED_BANK_BRANCH: CI Branch
+      SEED_ADMIN_EMAIL: admin@seshastone.com
+      SEED_ADMIN_PASSWORD: ChangeMe123!
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Migrate and seed
+        run: |
+          npx -w @seshastone/api prisma migrate deploy
+          npm run db:seed
+      - run: npm run build
+      - name: Start API, storefront and admin
+        run: |
+          (cd apps/api && nohup node dist/main > ../../api.log 2>&1 &)
+          nohup npm run start -w @seshastone/web > web.log 2>&1 &
+          nohup npm run start -w @seshastone/admin > admin.log 2>&1 &
+          for url in http://localhost:4000/api/v1/health http://localhost:3000 http://localhost:3001; do
+            for i in $(seq 1 60); do curl -sf -o /dev/null "$url" && break; sleep 2; done
+            curl -sf -o /dev/null "$url" || { echo "$url did not start"; cat api.log web.log admin.log; exit 1; }
+          done
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - name: Server logs
+        if: failure()
+        run: tail -n 200 api.log web.log admin.log
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-traces
+          path: test-results/
+          retention-days: 7
