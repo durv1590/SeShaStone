@@ -56,6 +56,12 @@ jobs:
       JWT_SECRET: ci-only-jwt-secret-not-used-anywhere-else
       CORS_ORIGINS: http://localhost:3000,http://localhost:3001
       WEB_URL: http://localhost:3000
+      # Uploaded photos are stored on disk and served by the API itself in CI.
+      STORAGE_DRIVER: local
+      MEDIA_DIR: /tmp/seshastone-media
+      MEDIA_PUBLIC_URL: http://localhost:4000/media
+      API_PUBLIC_URL: http://localhost:4000/api/v1
+      SERVE_MEDIA: 'true'
       SEED_STORE_LEGAL_NAME: CI Test Store
       SEED_STORE_EMAIL: ci@example.com
       SEED_UPI_ID: ci-test@upi

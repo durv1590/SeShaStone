@@ -1,5 +1,6 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
@@ -16,10 +17,23 @@ function assertProductionConfig() {
 async function bootstrap() {
   assertProductionConfig();
   // rawBody is required to verify payment gateway webhook signatures.
-  const app = await NestFactory.create(AppModule, { rawBody: true });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, { rawBody: true });
 
   app.setGlobalPrefix('api/v1');
   app.use(helmet());
+  // Development and CI only: serve locally stored uploads at /media. In production Caddy serves them.
+  if (process.env.SERVE_MEDIA === 'true' && process.env.STORAGE_DRIVER === 'local') {
+    app.useStaticAssets(process.env.MEDIA_DIR ?? '/data/media', {
+      prefix: '/media',
+      index: false,
+      dotfiles: 'deny',
+      setHeaders: (res) => {
+        res.setHeader('X-Content-Type-Options', 'nosniff');
+        // The storefront and admin run on other origins, so allow them to display the images.
+        res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+      },
+    });
+  }
   // Behind a load balancer / CDN, trust the first proxy so rate limits and audit logs see the client IP.
   app.getHttpAdapter().getInstance().set('trust proxy', 1);
   app.enableCors({

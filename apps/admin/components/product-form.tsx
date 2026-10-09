@@ -1,8 +1,8 @@
 'use client';
 
 import { FormEvent, useState } from 'react';
-import { api } from '@/lib/api';
 import { useApi } from '@/lib/use-api';
+import { ImageManager } from './image-manager';
 
 export const METALS = ['GOLD', 'SILVER', 'PLATINUM', 'ROSE_GOLD', 'WHITE_GOLD', 'BRASS', 'OTHER'];
 export const LINES: [string, string][] = [
@@ -51,17 +51,6 @@ export interface ProductFields {
 interface Option {
   id: string;
   name: string;
-}
-
-/** Uploads a file straight to S3 via a presigned URL and returns its public URL. */
-async function uploadImage(file: File) {
-  const { uploadUrl, publicUrl } = await api<{ uploadUrl: string; publicUrl: string }>('/admin/uploads', {
-    method: 'POST',
-    body: JSON.stringify({ folder: 'products', filename: file.name, contentType: file.type }),
-  });
-  const res = await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
-  if (!res.ok) throw new Error('Image upload failed');
-  return publicUrl;
 }
 
 /**
@@ -128,24 +117,12 @@ export function ProductFieldsForm({
         seoTitle: opt('seoTitle'),
         seoDescription: opt('seoDescription'),
         collectionIds: f.getAll('collectionIds') as string[],
-        images: images.map(({ url, alt }) => ({ url, alt: alt ?? undefined })),
+        images: images.map(({ url, alt }) => ({ url, alt: alt?.trim() || undefined })),
       });
     } catch (err) {
       setError((err as Error).message);
     } finally {
       setBusy(false);
-    }
-  }
-
-  async function onFiles(files: FileList | null) {
-    if (!files) return;
-    try {
-      for (const file of Array.from(files)) {
-        const url = await uploadImage(file);
-        setImages((prev) => [...prev, { url }]);
-      }
-    } catch (err) {
-      setError((err as Error).message);
     }
   }
 
@@ -255,16 +232,8 @@ export function ProductFieldsForm({
 
       <div className="panel">
         <h2>Images</h2>
-        <p className="muted">Use real photographs of this exact piece. Multiple images are supported; the first is the main image.</p>
-        <div className="toolbar">
-          {images.map((img, i) => (
-            <span key={img.url} className="badge">
-              #{i + 1} {img.url.split('/').pop()}{' '}
-              <button type="button" className="btn-sm btn btn-ghost" aria-label={`Remove image ${i + 1}`} onClick={() => setImages(images.filter((x) => x !== img))}>×</button>
-            </span>
-          ))}
-        </div>
-        <input type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple onChange={(e) => onFiles(e.target.files)} aria-label="Upload product images" />
+        <p className="muted">Use real photographs of this exact piece. The first photo is the main image; drag photos (or use the arrows) to reorder them, and describe each one for screen readers and search engines.</p>
+        <ImageManager images={images} onChange={setImages} />
       </div>
 
       {children}

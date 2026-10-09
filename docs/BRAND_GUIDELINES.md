@@ -58,6 +58,7 @@ Usage rules:
 
 ## Photography and campaigns
 
+- **Photo size:** frame for a 4:5 portrait crop (the product gallery shape), at least 1000px on the short side; the admin resizes larger photos automatically.
 - **Photography:** real studio photography of the exact piece. Controlled lighting, accurate metal and stone colour, ivory or charcoal backgrounds. No AI-generated or composited jewellery, and no reuse of one image across unrelated products. Artificial pieces must never be styled as gold or diamond.
 - **Campaign sizes:** desktop 1920×700, tablet 1280×700, mobile 1080×1350, Instagram 1080×1080, Story 1080×1920, Facebook 1200×628, WhatsApp 1080×1350.
 - **Festive direction:**

@@ -34,6 +34,7 @@ Manage staff in **Staff & roles**. At least one active Super Admin must always e
   - Line-specific fields appear for the line you pick (for example the hallmark HUID for gold, or plating and base material for premium artificial).
   - Fill in only verified details; every filled field is shown to customers.
   - Use real photographs of the exact piece.
+  - **Photos:** drop several at once or click **Add photos**. Each is rotated upright, resized to 2000px on its longest side and compressed in your browser before uploading, so phone photos of several MB become a few hundred KB. A note warns if a photo is under 1000px on its short side. The first photo is the main image: drag photos or use the arrows to reorder them, and fill in each photo's alt text (what it shows, e.g. "Necklace worn, front view"). iPhone HEIC photos open only in Safari; elsewhere, export them as JPEG or set the camera to "Most Compatible".
 - **Inventory:** adjust stock with a reason; every change is logged. Filter to low stock.
 - **Collections:** hand-picked collections (assign products on the product page) or automatic ones (newest, bestselling).
 - **Banners & CMS:**

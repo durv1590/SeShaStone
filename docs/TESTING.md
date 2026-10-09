@@ -31,6 +31,7 @@
 | --- | --- |
 | `api.spec.ts` | Health; the public settings leak check; RBAC (customer and Order Manager); account masking; financial confirmation; settings validation; the QR upload validator (non-image, non-UPI, different UPI ID); the whole manual payment lifecycle (idempotent checkout, server pricing, private evidence, reject with reason, single verify, refund cap, fully refunded state); tracking privacy; oversell protection under concurrency |
 | `journey.spec.ts` | The brief's 12-step journey: home → category → product → bag → sign-up → address → UPI → order reference and UTR → admin verifies → customer sees confirmed → shipment → public tracking |
+| `product-photos.spec.ts` | Admin photo manager: two large photos are resized to 2000px and converted to WebP in the browser, reordered, given alt text and saved; the storefront shows the new main photo |
 | `responsive.spec.ts` | No horizontal overflow on 12 pages at 320, 375, 390, 430, 768, 1024, 1280, 1440 and 1920 px |
 | `accessibility.spec.ts` | axe-core WCAG 2.1 A/AA (serious and critical) on key pages; keyboard access to the mega menu |
 
